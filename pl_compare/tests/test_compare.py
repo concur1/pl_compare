@@ -1,7 +1,7 @@
 import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
-from polars_compare.compare import compare
+from pl_compare.compare import compare
 
 
 @pytest.fixture
@@ -137,8 +137,8 @@ def test_expected_values_returned_all_differences_statistics(base_df, compare_df
 
 
 def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():
-    base_df = pl.scan_csv("tests/test_data/scenario_1/base.csv")
-    compare_df = pl.scan_csv("tests/test_data/scenario_1/compare.csv")
+    base_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/base.csv")
+    compare_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/compare.csv")
     compare_result = compare(["ID"], base_df, compare_df)
     assert isinstance(compare_result.schema_differences_summary(), pl.DataFrame)
     assert isinstance(compare_result.schema_differences_sample(), pl.DataFrame)
@@ -150,8 +150,8 @@ def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():
 
 def test_streaming_input_with_streaming_flag_returns_lazy_dfs():
     """test"""
-    base_df = pl.scan_csv("tests/test_data/scenario_1/base.csv")
-    compare_df = pl.scan_csv("tests/test_data/scenario_1/compare.csv")
+    base_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/base.csv")
+    compare_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/compare.csv")
     compare_result = compare(["ID"], base_df, compare_df, streaming=True)
     assert isinstance(compare_result.schema_differences_summary(), pl.LazyFrame)
     assert isinstance(compare_result.schema_differences_sample(), pl.LazyFrame)

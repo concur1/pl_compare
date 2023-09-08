@@ -1,5 +1,5 @@
 PROJETNAME=polars_compare
-SRCPATH := $(CURDIR)
+SRCPATH := $(CURDIR)/pl_compare
 
 .PHONY: format
 format:

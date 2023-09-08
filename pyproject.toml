@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "polars-compare"
+name = "pl_compare"
 version = "0.1.0"
 description = "A tool to find the differences between two tables."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-packages = [{include = "polars_compare"}]
+packages = [ {include = "pl_compare"} ]
 
 [tool.poetry.dependencies]
 python = "^3.10"
