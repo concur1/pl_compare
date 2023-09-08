@@ -8,6 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class ComparisonMetadata:
     """Class for holding the (meta)data used to generate the comparison dataframes."""
+
     id_columns: list[str]
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
@@ -17,6 +18,7 @@ class ComparisonMetadata:
     sample_limit: int
     base_alias: str
     compare_alias: str
+    schema_comparison: bool
 
 
 def get_duplicates(
@@ -206,6 +208,13 @@ def get_combined_tables(
     how_join: Literal["inner", "outer"] = "inner",
     threshold: int | None = None,
 ) -> pl.LazyFrame:
+    print(id_columns)
+    print(base_df)
+    print(compare_df)
+    print(compare_columns)
+    print(equality_check)
+    print(how_join)
+    print(threshold)
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
@@ -225,9 +234,7 @@ def get_combined_tables(
 
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.LazyFrame:
     return (
-        get_column_value_differences(
-            meta.id_columns, meta.base_df, meta.compare_df, meta.threshold, meta.equality_check
-        )
+        get_column_value_differences(meta)
         .groupby(["variable"])
         .agg(pl.sum("has_diff"))
         .sort("has_diff", descending=True)
@@ -249,19 +256,13 @@ def column_value_differences(
     return final
 
 
-def get_columns_to_compare(
-    id_columns: list[str],
-    base_df: pl.LazyFrame,
-    compare_df: pl.LazyFrame,
-    schema_comparison: bool = False,
-) -> dict[str, pl.DataType]:
+def get_columns_to_compare(meta) -> dict[str, pl.DataType]:
     # if schema_comparison:
     #    return ["format"]
-
     columns_to_exclude: list[str] = []
-    if not schema_comparison:
+    if not meta.schema_comparison:
         columns_to_exclude.extend(
-            get_schema_comparison(id_columns, base_df, compare_df)
+            get_schema_comparison(meta)
             .select(pl.col("column"))
             .collect(streaming=True)
             .to_series(0)
@@ -270,30 +271,25 @@ def get_columns_to_compare(
 
     return {
         col: format
-        for col, format in base_df.schema.items()
-        if col not in id_columns and col not in columns_to_exclude and col in compare_df.columns
+        for col, format in meta.base_df.schema.items()
+        if col not in meta.id_columns
+        and col not in columns_to_exclude
+        and col in meta.compare_df.columns
     }
 
 
-def get_column_value_differences(
-    id_columns: list[str],
-    base_df: pl.LazyFrame,
-    compare_df: pl.LazyFrame,
-    threshold: int | None,
-    equality_check: Callable[[str, pl.DataType], pl.Expr] | None,
-    schema_comparison: bool = False,
-) -> pl.LazyFrame:
+def get_column_value_differences(meta) -> pl.LazyFrame:
     how_join: Literal["inner", "outer"] = "inner"
-    if schema_comparison:
+    if meta.schema_comparison:
         how_join = "outer"
-    compare_columns = get_columns_to_compare(id_columns, base_df, compare_df, schema_comparison)
+    compare_columns = get_columns_to_compare(meta)
     combined_tables = get_combined_tables(
-        id_columns,
-        base_df,
-        compare_df,
+        meta.id_columns,
+        meta.base_df,
+        meta.compare_df,
         compare_columns,
-        equality_check,
-        threshold=threshold,
+        meta.equality_check,
+        threshold=meta.threshold,
         how_join=how_join,
     )
     melted_df = (
@@ -308,7 +304,7 @@ def get_column_value_differences(
             ]
         )
         .melt(
-            id_vars=id_columns,
+            id_vars=meta.id_columns,
             value_vars=[col for col, format in compare_columns.items()],
         )
         .unnest("value")
@@ -316,54 +312,62 @@ def get_column_value_differences(
     return melted_df
 
 
-def get_column_value_differences_filtered(
-    id_columns: list[str],
-    base_df: pl.LazyFrame,
-    compare_df: pl.LazyFrame,
-    threshold: int | None,
-    equality_check: Callable[[str, pl.DataType], pl.Expr] | None,
-    sample_limit: int | None = None,
-    schema_comparison: bool = False,
-) -> pl.LazyFrame:
-    df = get_column_value_differences(
-        id_columns, base_df, compare_df, threshold, equality_check, schema_comparison
-    )
+def get_column_value_differences_filtered(meta) -> pl.LazyFrame:
+    df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
-    if sample_limit is not None:
-        filtered_df = filtered_df.limit(sample_limit)
+    if meta.sample_limit is not None:
+        filtered_df = filtered_df.limit(meta.sample_limit)
     return filtered_df
 
 
-def get_schema_comparison(
-    id_columns: list[str],
-    base_df: pl.LazyFrame,
-    compare_df: pl.LazyFrame,
-) -> pl.LazyFrame:
+def get_schema_comparison(meta) -> pl.LazyFrame:
     base_df_schema = pl.LazyFrame(
         {
-            "column": base_df.schema.keys(),
-            "format": [str(val) for val in base_df.schema.values()],
+            "column": meta.base_df.schema.keys(),
+            "format": [str(val) for val in meta.base_df.schema.values()],
         }
     )
     compare_df_schema = pl.LazyFrame(
         {
-            "column": compare_df.schema.keys(),
-            "format": [str(val) for val in compare_df.schema.values()],
+            "column": meta.compare_df.schema.keys(),
+            "format": [str(val) for val in meta.compare_df.schema.values()],
         }
     )
 
     return get_column_value_differences_filtered(
-        ["column"],
-        base_df_schema,
-        compare_df_schema,
-        None,
-        None,
-        schema_comparison=True,
+        ComparisonMetadata(
+            id_columns=["column"],
+            base_df=base_df_schema,
+            compare_df=compare_df_schema,
+            streaming=True,
+            threshold=None,
+            equality_check=None,
+            sample_limit=5,
+            base_alias="base",
+            compare_alias="compare",
+            schema_comparison=True,
+        )
     )
 
 
+@dataclass
+class ComparisonMetadata:
+    """Class for holding the (meta)data used to generate the comparison dataframes."""
+
+    id_columns: list[str]
+    base_df: pl.LazyFrame
+    compare_df: pl.LazyFrame
+    streaming: bool
+    threshold: int | None
+    equality_check: Callable[[str, pl.DataType], pl.Expr] | None
+    sample_limit: int
+    base_alias: str
+    compare_alias: str
+    schema_comparison: bool
+
+
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
-    schema_comparison = get_schema_comparison(meta.id_columns, meta.base_df, meta.compare_df)
+    schema_comparison = get_schema_comparison(meta)
     schema_differences = (
         schema_comparison.filter(
             pl.col("base").is_not_null()
@@ -400,6 +404,7 @@ class compare:
     """
     Compare two dataframes.
     """
+
     def __init__(
         self,
         id_columns: list[str],
@@ -422,7 +427,7 @@ class compare:
             sample_limit,
             base_alias,
             compare_alias,
-
+            False,
         )
         self.created_frames: dict[str, pl.DataFrame | pl.LazyFrame] = {}
 
@@ -450,23 +455,10 @@ class compare:
         )
 
     def schema_differences_sample(self):
-        return self.get_or_create(
-            get_schema_comparison,
-            self.comparison_metadata.id_columns,
-            self.comparison_metadata.base_df,
-            self.comparison_metadata.compare_df,
-        )
+        return self.get_or_create(get_schema_comparison, self.comparison_metadata)
 
     def value_differences_sample(self):
-        return self.get_or_create(
-            get_column_value_differences_filtered,
-            self.comparison_metadata.id_columns,
-            self.comparison_metadata.base_df,
-            self.comparison_metadata.compare_df,
-            self.comparison_metadata.threshold,
-            self.comparison_metadata.equality_check,
-            self.comparison_metadata.sample_limit,
-        )
+        return self.get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
 
     def is_schema_unequal(self):
         return self.schema_differences_sample().shape[0] != 0
