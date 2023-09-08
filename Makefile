@@ -13,7 +13,7 @@ format:
 check:
 	-ruff $(SRCPATH)
 	-black --check $(SRCPATH)
-	-mypy --strict compare.py
+	-mypy --strict pl_compare/compare.py
 	-pytest $(SRCPATH)
 
 .PHONY: test
