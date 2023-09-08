@@ -112,7 +112,7 @@ def test_expected_values_returned_value_differences(base_df, compare_df):
     assert_frame_equal(compare_result.value_differences_sample(), expected_value_differences)
 
 
-def test_expected_values_returned_all_differences_statistics(base_df, compare_df):
+def test_expected_values_returned_all_differences_summary(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
         {
@@ -133,7 +133,7 @@ def test_expected_values_returned_all_differences_statistics(base_df, compare_df
             "Count": [1, 1, 3, 0, 1, 1, 3, 3, 1, 1, 2, 1],
         }
     )
-    assert_frame_equal(compare_result.all_differences_statistics(), expected_value_differences)
+    assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)
 
 
 def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():

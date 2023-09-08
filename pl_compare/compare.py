@@ -15,6 +15,8 @@ class ComparisonMetadata:
     threshold: int | None
     equality_check: Callable[[str, pl.DataType], pl.Expr] | None
     sample_limit: int
+    base_alias: str
+    compare_alias: str
 
 
 def get_duplicates(
@@ -407,6 +409,8 @@ class compare:
         threshold: int | None = None,
         equality_check: Callable[[str, pl.DataType], pl.Expr] | None = None,
         sample_limit: int = 5,
+        base_alias: str = "base",
+        compare_alias: str = "compare",
     ):
         self.comparison_metadata = ComparisonMetadata(
             id_columns,
@@ -416,6 +420,9 @@ class compare:
             threshold,
             equality_check,
             sample_limit,
+            base_alias,
+            compare_alias,
+
         )
         self.created_frames: dict[str, pl.DataFrame | pl.LazyFrame] = {}
 
@@ -470,7 +477,7 @@ class compare:
     def is_values_unequal(self):
         return set_df_type(self.value_differences_sample(), streaming=False).shape[0] != 0
 
-    def all_differences_statistics(self):
+    def all_differences_summary(self):
         return pl.concat(
             [
                 self.schema_differences_summary(),
@@ -498,4 +505,4 @@ class compare:
         print("Value differences:", self.is_values_unequal())
         print(self.value_differences_sample())
         with pl.Config(fmt_str_lengths=50):
-            print(self.all_differences_statistics())
+            print(self.all_differences_summary())
