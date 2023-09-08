@@ -4,7 +4,7 @@
   - Schema differences
   - Row differences
   - Value differences
-- Compatible with Pandas dataframes and other tabular data formats through Apache arrow
+- Easily works for Pandas dataframes and other tabular data formats with conversion using Apache arrow 
 - View differences as a text report
 - Get differences as a Polars LazyFram or DataFrame.
 - Use LazyFrames for larger than memory comparisons
@@ -45,6 +45,12 @@ compare_result = compare(["ID"], base_df, compare_df)
 print("is_schema_unequal:", compare_result.is_schema_unequal())
 print("is_rows_unequal:", compare_result.is_rows_unequal())
 print("is_values_unequal:", compare_result.is_values_unequal())
+```
+output:
+```bash
+is_schema_unequal: True
+is_rows_unequal: True
+is_values_unequal: True
 ```
 </details>
 
