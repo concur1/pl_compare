@@ -58,9 +58,8 @@ def test_expected_values_returned_for_schema_differences(base_df, compare_df):
     expected_schema_differnces = pl.DataFrame(
         {
             "column": ["Example2", "Example3"],
-            "variable": ["format", "format"],
-            "base": ["Utf8", None],
-            "compare": ["Int64", "Int64"],
+            "base_format": ["Utf8", None],
+            "compare_format": ["Int64", "Int64"],
         }
     )
     assert_frame_equal(compare_result.schema_differences_sample(), expected_schema_differnces)

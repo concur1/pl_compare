@@ -208,13 +208,6 @@ def get_combined_tables(
     how_join: Literal["inner", "outer"] = "inner",
     threshold: int | None = None,
 ) -> pl.LazyFrame:
-    print(id_columns)
-    print(base_df)
-    print(compare_df)
-    print(compare_columns)
-    print(equality_check)
-    print(how_join)
-    print(threshold)
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
@@ -299,7 +292,9 @@ def get_column_value_differences(meta) -> pl.LazyFrame:
                     base=f"{col}_base",
                     compare=f"{col}_compare",
                     has_diff=f"{col}_has_diff",
-                ).alias(col)
+                )
+                .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
+                .alias(col)
                 for col, format in compare_columns.items()
             ]
         )
@@ -309,6 +304,7 @@ def get_column_value_differences(meta) -> pl.LazyFrame:
         )
         .unnest("value")
     )
+
     return melted_df
 
 
@@ -342,37 +338,21 @@ def get_schema_comparison(meta) -> pl.LazyFrame:
             streaming=True,
             threshold=None,
             equality_check=None,
-            sample_limit=5,
-            base_alias="base",
-            compare_alias="compare",
+            sample_limit=meta.sample_limit,
+            base_alias=f"{meta.base_alias}_format",
+            compare_alias=f"{meta.compare_alias}_format",
             schema_comparison=True,
         )
-    )
-
-
-@dataclass
-class ComparisonMetadata:
-    """Class for holding the (meta)data used to generate the comparison dataframes."""
-
-    id_columns: list[str]
-    base_df: pl.LazyFrame
-    compare_df: pl.LazyFrame
-    streaming: bool
-    threshold: int | None
-    equality_check: Callable[[str, pl.DataType], pl.Expr] | None
-    sample_limit: int
-    base_alias: str
-    compare_alias: str
-    schema_comparison: bool
+    ).drop("variable")
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     schema_comparison = get_schema_comparison(meta)
     schema_differences = (
         schema_comparison.filter(
-            pl.col("base").is_not_null()
-            & pl.col("compare").is_not_null()
-            & (pl.col("base") != pl.col("compare"))
+            pl.col(f"{meta.base_alias}_format").is_not_null()
+            & pl.col(f"{meta.compare_alias}_format").is_not_null()
+            & (pl.col(f"{meta.base_alias}_format") != pl.col(f"{meta.compare_alias}_format"))
         )
         .select(pl.count())
         .collect(streaming=True)
