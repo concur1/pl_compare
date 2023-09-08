@@ -1,9 +1,10 @@
-## polars_compare: Compare and find the differences between two Polars DataFrames. 
+## pl_compare: Compare and find the differences between two Polars DataFrames. 
 
 - Get statistical summaries and/or examples and/or a boolean to indicate:
   - Schema differences
   - Row differences
   - Value differences
+- Compatible with Pandas dataframes and other tabular data formats through Apache arrow
 - View differences as a text report
 - Get differences as a Polars LazyFram or DataFrame.
 - Use LazyFrames for larger than memory comparisons
@@ -17,7 +18,35 @@ pip install pl_compare
 
 ### Examples
 
+<details>
+<summary>Return booleans to check for schema, row and value differences</summary>
 
+```python
+import polars as pl
+from pl_compare import compare
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], base_df, compare_df)
+print("is_schema_unequal:", compare_result.is_schema_unequal())
+print("is_rows_unequal:", compare_result.is_rows_unequal())
+print("is_values_unequal:", compare_result.is_values_unequal())
+```
+</details>
 
 
 ### To DO:
