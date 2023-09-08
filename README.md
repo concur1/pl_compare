@@ -54,6 +54,89 @@ is_values_unequal: True
 ```
 </details>
 
+<details>
+<summary>Schema differences summary</summary>
+
+```python
+import polars as pl
+from pl_compare import compare
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], base_df, compare_df)
+print(compare_result.schema_differences_summary())
+```
+output:
+```bash
+shape: (6, 2)
+┌─────────────────────────────────┬───────┐
+│ Statistic                       ┆ Count │
+│ ---                             ┆ ---   │
+│ str                             ┆ i64   │
+╞═════════════════════════════════╪═══════╡
+│ Columns in base                 ┆ 1     │
+│ Columns in compare              ┆ 1     │
+│ Columns in base and compare     ┆ 3     │
+│ Columns only in base            ┆ 0     │
+│ Columns only in compare         ┆ 1     │
+│ Columns with schema differences ┆ 1     │
+└─────────────────────────────────┴───────┘
+```
+</details>
+
+<details>
+<summary>Schema differences details</summary>
+
+```python
+import polars as pl
+from pl_compare import compare
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], base_df, compare_df)
+print(compare_result.schema_differences_summary())
+```
+output:
+```bash
+shape: (2, 3)
+┌──────────┬─────────────┬────────────────┐
+│ column   ┆ base_format ┆ compare_format │
+│ ---      ┆ ---         ┆ ---            │
+│ str      ┆ str         ┆ str            │
+╞══════════╪═════════════╪════════════════╡
+│ Example2 ┆ Utf8        ┆ Int64          │
+│ Example3 ┆ null        ┆ Int64          │
+└──────────┴─────────────┴────────────────┘
+```
+</details>
 
 ### To DO:
 - [x] Linting (Ruff)
