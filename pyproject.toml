@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "polars-compare"
+version = "0.1.0"
+description = "A tool to find the differences between two tables."
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{include = "polars_compare"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+black = "^23.7.0"
+polars = "^0.18.15"
+ruff = "^0.0.284"
+mypy = "^1.5.1"
+pytest = "^7.4.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+ignore = ["E501"]
+line-length = 100
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
