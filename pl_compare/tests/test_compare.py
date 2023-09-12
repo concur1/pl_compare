@@ -46,7 +46,7 @@ def test_expected_values_returned_for_schema_summary(base_df, compare_df):
                 "Columns only in compare",
                 "Columns with schema differences",
             ],
-            "Count": [1, 1, 3, 0, 1, 1],
+            "Count": [3, 4, 3, 0, 1, 1],
         }
     )
     print(compare_result.schema_differences_summary())
@@ -129,7 +129,7 @@ def test_expected_values_returned_all_differences_summary(base_df, compare_df):
                 "Rows in base and compare",
                 "Value diffs Col:Example1",
             ],
-            "Count": [1, 1, 3, 0, 1, 1, 3, 3, 1, 1, 2, 1],
+            "Count": [3, 4, 3, 0, 1, 1, 3, 3, 1, 1, 2, 1],
         }
     )
     assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)

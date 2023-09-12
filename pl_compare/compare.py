@@ -374,8 +374,8 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 "Columns with schema differences",
             ],
             "Count": [
-                len([meta.base_df.columns]),
-                len([meta.compare_df.columns]),
+                len(meta.base_df.columns),
+                len(meta.compare_df.columns),
                 len([col for col in meta.compare_df.columns if col in meta.base_df]),
                 len([col for col in meta.base_df.columns if col not in meta.compare_df.columns]),
                 len([col for col in meta.compare_df.columns if col not in meta.base_df.columns]),
