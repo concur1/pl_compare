@@ -312,7 +312,12 @@ def get_column_value_differences_filtered(meta) -> pl.LazyFrame:
     df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
-        filtered_df = filtered_df.limit(meta.sample_limit)
+        filtered_df = ( filtered_df
+            .with_columns(pl.lit(1).alias("ones"))
+            .with_columns(pl.col("ones").cumsum().over('variable').alias("row_sample_number"))
+            .filter(pl.col("row_sample_number") <= pl.lit(meta.sample_limit))
+            .drop("ones", "row_sample_number")
+        )
     return filtered_df
 
 
@@ -476,5 +481,5 @@ class compare:
         print(self.value_differences_summary())
         print("Value differences:", self.is_values_unequal())
         print(self.value_differences_sample())
-        with pl.Config(fmt_str_lengths=50):
-            print(self.all_differences_summary())
+        print("All differences summary:")
+        print(self.all_differences_summary())
