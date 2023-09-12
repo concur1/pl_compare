@@ -138,6 +138,10 @@ shape: (2, 3)
 ```
 </details>
 
+- pandas comparison example
+- custom equality function
+- use of column aliases
+
 ### To DO:
 - [x] Linting (Ruff)
 - [x] Make into python package
