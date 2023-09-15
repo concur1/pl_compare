@@ -68,7 +68,7 @@ def set_df_type(
 
 def get_uncertain_row_count(df: pl.LazyFrame) -> int:
     df_solid = collect_if_lazy(df.select("count"))
-    if df_solid.shape[0] > 0:
+    if df_solid.height > 0:
         row_count: int = df_solid.item()
         return row_count
     else:
@@ -401,6 +401,7 @@ class compare:
         sample_limit: int = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
+        hide_empty_stats: bool = False,
     ):
         self.comparison_metadata = ComparisonMetadata(
             id_columns,
@@ -446,13 +447,13 @@ class compare:
         return self.get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
 
     def is_schema_unequal(self):
-        return self.schema_differences_sample().shape[0] != 0
+        return self.schema_differences_sample().height != 0
 
     def is_rows_unequal(self):
-        return self.row_differences_sample().shape[0] != 0
+        return self.row_differences_sample().height != 0
 
     def is_values_unequal(self):
-        return set_df_type(self.value_differences_sample(), streaming=False).shape[0] != 0
+        return set_df_type(self.value_differences_sample(), streaming=False).height != 0
 
     def all_differences_summary(self):
         return pl.concat(

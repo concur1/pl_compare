@@ -482,7 +482,7 @@ def custom_equality_check(col: str, format: pl.DataType) -> pl.Expr:
         | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
         | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
     )
-print("With thrshold of 0.01")
+print("With threshold of 0.01")
 compare_result = compare(["ID"], base_df, compare_df, threshold=0.01)
 print(compare_result.value_differences_sample())
 print("With no threshold")
@@ -491,7 +491,7 @@ print(compare_result.value_differences_sample())
 ```
 output:
 ```
-With thrshold of 0.01
+With threshold of 0.01
 shape: (1, 4)
 ┌─────────┬──────────┬──────┬─────────┐
 │ ID      ┆ variable ┆ base ┆ compare │
@@ -596,7 +596,6 @@ shape: (1, 4)
 - [] Add total number of value differences to the value differences summary.
 - [] Update report so that non differences are (optionally) not displayed.
 - [] Change id_columns to be named 'join_on' and add a test that checks that abritrary join conditions work.
-- [] Change 'threshold' to be 'granularity'/'numeric granularity?'
 - [] Update code to use a config dataclass that can be passed between the class and functions.
 - [] Simplify custom equality checks and add example.
 - [] Test for large amounts of data
@@ -604,5 +603,9 @@ shape: (1, 4)
 - [] strict MyPy type checking
 - [] Github actions for testing
 - [] Github actions for linting
-- [] Github actions for publishing
+- [x] Github actions for publishing
+
+### not sure of:
+- [] Seperate out dev dependencies from library dependnecies?
+- [] Change 'threshold' to be 'granularity'/'numeric granularity?'
 
