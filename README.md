@@ -452,6 +452,67 @@ shape: (12, 2)
 └─────────────────────────────────┴───────┘
 ```
 </details>
+
+
+<details>
+<summary>Specify a threshold to control the frandularity of hte comparison for numeric columns.</summary>
+
+```python
+import polars as pl
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1.111, 6.11, 3.11],
+    }
+)
+
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1.114, 6.14, 3.12],
+    },
+)
+
+def custom_equality_check(col: str, format: pl.DataType) -> pl.Expr:
+    return (
+        (pl.col(f"{col}_base") != pl.col(f"{col}_compare"))
+        | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
+        | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
+    )
+print("With thrshold of 0.01")
+compare_result = compare(["ID"], base_df, compare_df, threshold=0.01)
+print(compare_result.value_differences_sample())
+print("With no threshold")
+compare_result = compare(["ID"], base_df, compare_df)
+print(compare_result.value_differences_sample())
+```
+output:
+```
+With thrshold of 0.01
+shape: (1, 4)
+┌─────────┬──────────┬──────┬─────────┐
+│ ID      ┆ variable ┆ base ┆ compare │
+│ ---     ┆ ---      ┆ ---  ┆ ---     │
+│ str     ┆ str      ┆ f64  ┆ f64     │
+╞═════════╪══════════╪══════╪═════════╡
+│ 1234567 ┆ Example1 ┆ 6.11 ┆ 6.14    │
+└─────────┴──────────┴──────┴─────────┘
+With no threshold
+shape: (2, 4)
+┌─────────┬──────────┬───────┬─────────┐
+│ ID      ┆ variable ┆ base  ┆ compare │
+│ ---     ┆ ---      ┆ ---   ┆ ---     │
+│ str     ┆ str      ┆ f64   ┆ f64     │
+╞═════════╪══════════╪═══════╪═════════╡
+│ 123456  ┆ Example1 ┆ 1.111 ┆ 1.114   │
+│ 1234567 ┆ Example1 ┆ 6.11  ┆ 6.14    │
+└─────────┴──────────┴───────┴─────────┘
+```
+</details>
+
+
+
 - custom equality function
 - use of column aliases
 
@@ -479,6 +540,7 @@ shape: (12, 2)
 - [] Update report so that non differences are (optionally) not displayed.
 - [] Change id_columns to be named 'join_on' and add a test that checks that abritrary join conditions work.
 - [] Update code to use a config dataclass that can be passed between the class and functions.
+- [] Simplify custom equality checks and add example.
 - [] Test for large amounts of data
 - [] Benchmark for different sizes of data.
 - [] strict MyPy type checking
