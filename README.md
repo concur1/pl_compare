@@ -590,10 +590,10 @@ shape: (1, 4)
 - [x] Add table name labels that can replace 'base' and 'compare'.
 - [] Write up docstrings
 - [x] Write up readme (with code examples)
+- [] Add parameter to hide column differences with 0 differences.
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
-- [] Add parameter to hide column differences with 0 differences.
 - [] Update report so that non differences are (optionally) not displayed.
 - [] Change id_columns to be named 'join_on' and add a test that checks that abritrary join conditions work.
 - [] Change 'threshold' to be 'granularity'/'numeric granularity?'
