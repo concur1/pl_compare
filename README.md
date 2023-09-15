@@ -343,6 +343,7 @@ shape: (12, 2)
 ```python
 import polars as pl
 import pandas as pd
+from pl_compare import compare
 
 base_df = pd.DataFrame(data=
     {
@@ -459,6 +460,7 @@ shape: (12, 2)
 
 ```python
 import polars as pl
+from pl_compare import compare
 
 base_df = pl.DataFrame(
     {
@@ -517,6 +519,7 @@ shape: (2, 4)
 
 ```python
 import polars as pl
+from pl_compare import compare
 
 base_df = pl.DataFrame(
     {
@@ -569,8 +572,6 @@ shape: (1, 4)
 ```
 </details>
 
-- custom equality function
-- use of column aliases
 
 ### To DO:
 - [x] Linting (Ruff)
@@ -588,7 +589,7 @@ shape: (1, 4)
 - [x] Make package easy to use (i.e. so you only have to import pl_compare and then you can us pl_compare)
 - [x] Add table name labels that can replace 'base' and 'compare'.
 - [] Write up docstrings
-- [] Write up readme (with code examples)
+- [x] Write up readme (with code examples)
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
