@@ -590,7 +590,7 @@ shape: (1, 4)
 - [x] Add table name labels that can replace 'base' and 'compare'.
 - [] Write up docstrings
 - [x] Write up readme (with code examples)
-- [] Add parameter to hide column differences with 0 differences.
+- [x] Add parameter to hide column differences with 0 differences.
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
@@ -608,4 +608,3 @@ shape: (1, 4)
 ### not sure of:
 - [] Seperate out dev dependencies from library dependnecies?
 - [] Change 'threshold' to be 'granularity'/'numeric granularity?'
-
