@@ -47,7 +47,7 @@ print("is_rows_unequal:", compare_result.is_rows_unequal())
 print("is_values_unequal:", compare_result.is_values_unequal())
 ```
 output:
-```bash
+```
 is_schema_unequal: True
 is_rows_unequal: True
 is_values_unequal: True
@@ -84,7 +84,7 @@ print("schema_differences_sample()")
 print(compare_result.schema_differences_sample())
 ```
 output:
-```bash
+```
 schema_differences_summary()
 shape: (6, 2)
 ┌─────────────────────────────────┬───────┐
@@ -142,7 +142,7 @@ print("row_differences_sample()")
 print(compare_result.row_differences_sample())
 ```
 output:
-```bash
+```
 row_differences_summary()
 shape: (5, 2)
 ┌──────────────────────────┬───────┐
@@ -199,7 +199,7 @@ print("value_differences_sample()")
 print(compare_result.value_differences_sample())
 ```
 output:
-```bash
+```
 value_differences_summary()
 shape: (1, 2)
 ┌──────────────────────────────┬───────┐
@@ -248,7 +248,7 @@ compare_result = compare(["ID"], base_df, compare_df)
 print(compare_result.report())
 ```
 output:
-```bash
+```
 Schema summary:
 shape: (6, 2)
 ┌─────────────────────────────────┬───────┐
