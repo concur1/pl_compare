@@ -338,7 +338,7 @@ shape: (12, 2)
 </details>
 
 <details>
-<summary>Compare two pandas dataframes (you will need to convert to polars frames first)</summary>
+<summary>Compare two pandas dataframes</summary>
 
 ```python
 import polars as pl

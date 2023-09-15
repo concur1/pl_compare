@@ -97,7 +97,7 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
 def test_expected_values_returned_value_summary(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_summary = pl.DataFrame(
-        {"Value Differences for Column": ["Example1"], "Count": [1]},
+        {"Value Differences for Column": ["Total Value Differences", "Example1"], "Count": [1, 1]},
         schema={"Value Differences for Column": pl.Utf8, "Count": pl.Int64},
     )
     assert_frame_equal(compare_result.value_differences_summary(), expected_value_summary)
@@ -111,7 +111,21 @@ def test_expected_values_returned_value_differences(base_df, compare_df):
     assert_frame_equal(compare_result.value_differences_sample(), expected_value_differences)
 
 
-def test_expected_values_returned_all_differences_summary(base_df, compare_df):
+def test_expected_values_returned_all_differences_summary():
+    base_df = pl.DataFrame(
+            {
+                "ID": ["123456", "1234567", "12345678"],
+                "Example1": [1, 6, 3],
+                "Example2": [100, 2, 3],
+            }
+        )
+    compare_df = pl.DataFrame(
+            {
+                "ID": ["123456", "1234567", "1234567810"],
+                "Example1": [1, 2, 3],
+                "Example2": [1, 2, 3],
+            },
+        )
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
         {
@@ -127,13 +141,16 @@ def test_expected_values_returned_all_differences_summary(base_df, compare_df):
                 "Rows only in base",
                 "Rows only in compare",
                 "Rows in base and compare",
+                "Total Value Differences",
+                "Value diffs Col:Example2",
                 "Value diffs Col:Example1",
             ],
-            "Count": [3, 4, 3, 0, 1, 1, 3, 3, 1, 1, 2, 1],
+            "Count": [3, 3, 3, 0, 0, 0, 3, 3, 1, 1, 2, 2, 1, 1],
         }
     )
+    print(compare_result.all_differences_summary())
+    print(expected_value_differences)
     assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)
-
 
 def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():
     base_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/base.csv")
@@ -213,6 +230,7 @@ def test_sample_limit():
         == 1
     )
 
+
 def test_hide_empty_stats():
     base_df = pl.DataFrame(
         {
@@ -240,9 +258,21 @@ def test_hide_empty_stats():
                 "Rows only in base",
                 "Rows only in compare",
                 "Rows in base and compare",
+                "Total Value Differences",
                 "Value diffs Col:Example1",
             ],
-            "Count": [3, 3, 3, 3, 3, 1, 1, 2, 1, ],
+            "Count": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                1,
+                1,
+                2,
+                1,
+                1,
+            ],
         }
     )
-    assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)    
+    assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)

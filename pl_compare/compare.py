@@ -111,7 +111,7 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         .rename({"column": "Statistic", "Col Differences": "Count"})
     )
     if meta.hide_empty_stats:
-        final_df = final_df.filter(pl.col("Count") > 0 )
+        final_df = final_df.filter(pl.col("Count") > 0)
     return final_df
 
 
@@ -237,9 +237,16 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.LazyFrame:
         .sort("has_diff", descending=True)
         .rename({"variable": "Value Differences for Column", "has_diff": "Count"})
     )
+    total_differences = final_df.select(
+        pl.lit("Total Value Differences").alias("Value Differences for Column"),
+        pl.sum("Count").alias("Count"),
+    )
+    final_df2 = pl.concat(
+        [total_differences.collect(streaming=True), final_df.collect(streaming=True)]
+    )
     if meta.hide_empty_stats:
-        final_df = final_df.filter(pl.col("Count") > 0 )
-    return final_df
+        final_df2 = final_df2.filter(pl.col("Count") > 0)
+    return final_df2
 
 
 def column_value_differences(
@@ -319,9 +326,9 @@ def get_column_value_differences_filtered(meta) -> pl.LazyFrame:
     df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
-        filtered_df = ( filtered_df
-            .with_columns(pl.lit(1).alias("ones"))
-            .with_columns(pl.col("ones").cumsum().over('variable').alias("row_sample_number"))
+        filtered_df = (
+            filtered_df.with_columns(pl.lit(1).alias("ones"))
+            .with_columns(pl.col("ones").cumsum().over("variable").alias("row_sample_number"))
             .filter(pl.col("row_sample_number") <= pl.lit(meta.sample_limit))
             .drop("ones", "row_sample_number")
         )
@@ -392,7 +399,7 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         }
     )
     if meta.hide_empty_stats:
-        final_df = final_df.filter(pl.col("Count") > 0 )
+        final_df = final_df.filter(pl.col("Count") > 0)
     return final_df
 
 
@@ -425,7 +432,7 @@ class compare:
             base_alias,
             compare_alias,
             False,
-            hide_empty_stats
+            hide_empty_stats,
         )
         self.created_frames: dict[str, pl.DataFrame | pl.LazyFrame] = {}
 
@@ -472,10 +479,16 @@ class compare:
             [
                 self.schema_differences_summary(),
                 self.row_differences_summary(),
-                self.value_differences_summary().select(
-                    pl.concat_str(
-                        pl.lit("Value diffs Col:"), pl.col("Value Differences for Column")
-                    ).alias("Statistic"),
+                self.value_differences_summary()
+                .rename({"Value Differences for Column": "Statistic"})
+                .filter(pl.col("Statistic") == pl.lit("Total Value Differences")),
+                self.value_differences_summary()
+                .rename({"Value Differences for Column": "Statistic"})
+                .filter(pl.col("Statistic") != pl.lit("Total Value Differences"))
+                .select(
+                    pl.concat_str(pl.lit("Value diffs Col:"), pl.col("Statistic")).alias(
+                        "Statistic"
+                    ),
                     "Count",
                 ),
             ]
