@@ -512,6 +512,62 @@ shape: (2, 4)
 </details>
 
 
+<details>
+<summary>Example using alias for base and compare dataframes.</summary>
+
+```python
+import polars as pl
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], 
+                         base_df, 
+                         compare_df, 
+                         base_alias="before_change", 
+                         compare_alias="after_change")
+
+print("value_differences_summary()")
+print(compare_result.schema_differences_sample())
+print("value_differences_sample()")
+print(compare_result.value_differences_sample())
+```
+output:
+```
+value_differences_summary()
+shape: (2, 3)
+┌──────────┬──────────────────────┬─────────────────────┐
+│ column   ┆ before_change_format ┆ after_change_format │
+│ ---      ┆ ---                  ┆ ---                 │
+│ str      ┆ str                  ┆ str                 │
+╞══════════╪══════════════════════╪═════════════════════╡
+│ Example2 ┆ Utf8                 ┆ Int64               │
+│ Example3 ┆ null                 ┆ Int64               │
+└──────────┴──────────────────────┴─────────────────────┘
+value_differences_sample()
+shape: (1, 4)
+┌─────────┬──────────┬───────────────┬──────────────┐
+│ ID      ┆ variable ┆ before_change ┆ after_change │
+│ ---     ┆ ---      ┆ ---           ┆ ---          │
+│ str     ┆ str      ┆ i64           ┆ i64          │
+╞═════════╪══════════╪═══════════════╪══════════════╡
+│ 1234567 ┆ Example1 ┆ 6             ┆ 2            │
+└─────────┴──────────┴───────────────┴──────────────┘
+```
+</details>
 
 - custom equality function
 - use of column aliases
@@ -539,6 +595,7 @@ shape: (2, 4)
 - [] Add parameter to hide column differences with 0 differences.
 - [] Update report so that non differences are (optionally) not displayed.
 - [] Change id_columns to be named 'join_on' and add a test that checks that abritrary join conditions work.
+- [] Change 'threshold' to be 'granularity'/'numeric granularity?'
 - [] Update code to use a config dataclass that can be passed between the class and functions.
 - [] Simplify custom equality checks and add example.
 - [] Test for large amounts of data
