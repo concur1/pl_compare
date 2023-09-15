@@ -343,7 +343,7 @@ def get_schema_comparison(meta) -> pl.LazyFrame:
             streaming=True,
             threshold=None,
             equality_check=None,
-            sample_limit=meta.sample_limit,
+            sample_limit=None,
             base_alias=f"{meta.base_alias}_format",
             compare_alias=f"{meta.compare_alias}_format",
             schema_comparison=True,
