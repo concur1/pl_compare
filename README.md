@@ -55,7 +55,7 @@ is_values_unequal: True
 </details>
 
 <details>
-<summary>Schema differences summary</summary>
+<summary>Schema differences summary and details</summary>
 
 ```python
 import polars as pl
@@ -78,10 +78,14 @@ compare_df = pl.DataFrame(
 )
 
 compare_result = compare(["ID"], base_df, compare_df)
+print("schema_differences_summary()")
 print(compare_result.schema_differences_summary())
+print("schema_differences_sample()")
+print(compare_result.schema_differences_sample())
 ```
 output:
 ```bash
+schema_differences_summary()
 shape: (6, 2)
 ┌─────────────────────────────────┬───────┐
 │ Statistic                       ┆ Count │
@@ -95,11 +99,21 @@ shape: (6, 2)
 │ Columns only in compare         ┆ 1     │
 │ Columns with schema differences ┆ 1     │
 └─────────────────────────────────┴───────┘
+schema_differences_sample()
+shape: (2, 3)
+┌──────────┬─────────────┬────────────────┐
+│ column   ┆ base_format ┆ compare_format │
+│ ---      ┆ ---         ┆ ---            │
+│ str      ┆ str         ┆ str            │
+╞══════════╪═════════════╪════════════════╡
+│ Example2 ┆ Utf8        ┆ Int64          │
+│ Example3 ┆ null        ┆ Int64          │
+└──────────┴─────────────┴────────────────┘
 ```
 </details>
 
 <details>
-<summary>Schema differences details</summary>
+<summary>Row differences summary and details</summary>
 
 ```python
 import polars as pl
@@ -122,10 +136,134 @@ compare_df = pl.DataFrame(
 )
 
 compare_result = compare(["ID"], base_df, compare_df)
-print(compare_result.schema_differences_summary())
+print("row_differences_summary()")
+print(compare_result.row_differences_summary())
+print("row_differences_sample()")
+print(compare_result.row_differences_sample())
 ```
 output:
 ```bash
+row_differences_summary()
+shape: (5, 2)
+┌──────────────────────────┬───────┐
+│ Statistic                ┆ Count │
+│ ---                      ┆ ---   │
+│ str                      ┆ i64   │
+╞══════════════════════════╪═══════╡
+│ Rows in base             ┆ 3     │
+│ Rows in compare          ┆ 3     │
+│ Rows only in base        ┆ 1     │
+│ Rows only in compare     ┆ 1     │
+│ Rows in base and compare ┆ 2     │
+└──────────────────────────┴───────┘
+row_differences_sample()
+shape: (2, 3)
+┌────────────┬──────────┬─────────────────┐
+│ ID         ┆ variable ┆ value           │
+│ ---        ┆ ---      ┆ ---             │
+│ str        ┆ str      ┆ str             │
+╞════════════╪══════════╪═════════════════╡
+│ 12345678   ┆ status   ┆ in base only    │
+│ 1234567810 ┆ status   ┆ in compare only │
+└────────────┴──────────┴─────────────────┘
+```
+</details>
+
+<details>
+<summary>Value differences summary and details</summary>
+
+```python
+import polars as pl
+from pl_compare import compare
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], base_df, compare_df)
+print("value_differences_summary()")
+print(compare_result.value_differences_summary())
+print("value_differences_sample()")
+print(compare_result.value_differences_sample())
+```
+output:
+```bash
+value_differences_summary()
+shape: (1, 2)
+┌──────────────────────────────┬───────┐
+│ Value Differences for Column ┆ Count │
+│ ---                          ┆ ---   │
+│ str                          ┆ i64   │
+╞══════════════════════════════╪═══════╡
+│ Example1                     ┆ 1     │
+└──────────────────────────────┴───────┘
+value_differences_sample()
+shape: (1, 4)
+┌─────────┬──────────┬──────┬─────────┐
+│ ID      ┆ variable ┆ base ┆ compare │
+│ ---     ┆ ---      ┆ ---  ┆ ---     │
+│ str     ┆ str      ┆ i64  ┆ i64     │
+╞═════════╪══════════╪══════╪═════════╡
+│ 1234567 ┆ Example1 ┆ 6    ┆ 2       │
+└─────────┴──────────┴──────┴─────────┘
+```
+</details>
+
+<details>
+<summary>Full report</summary>
+
+```python
+import polars as pl
+from pl_compare import compare
+
+base_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pl.DataFrame(
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], base_df, compare_df)
+print(compare_result.report())
+```
+output:
+```bash
+Schema summary:
+shape: (6, 2)
+┌─────────────────────────────────┬───────┐
+│ Statistic                       ┆ Count │
+│ ---                             ┆ ---   │
+│ str                             ┆ i64   │
+╞═════════════════════════════════╪═══════╡
+│ Columns in base                 ┆ 3     │
+│ Columns in compare              ┆ 4     │
+│ Columns in base and compare     ┆ 3     │
+│ Columns only in base            ┆ 0     │
+│ Columns only in compare         ┆ 1     │
+│ Columns with schema differences ┆ 1     │
+└─────────────────────────────────┴───────┘
+Schema differences: True
 shape: (2, 3)
 ┌──────────┬─────────────┬────────────────┐
 │ column   ┆ base_format ┆ compare_format │
@@ -135,6 +273,67 @@ shape: (2, 3)
 │ Example2 ┆ Utf8        ┆ Int64          │
 │ Example3 ┆ null        ┆ Int64          │
 └──────────┴─────────────┴────────────────┘
+Row summary:
+shape: (5, 2)
+┌──────────────────────────┬───────┐
+│ Statistic                ┆ Count │
+│ ---                      ┆ ---   │
+│ str                      ┆ i64   │
+╞══════════════════════════╪═══════╡
+│ Rows in base             ┆ 3     │
+│ Rows in compare          ┆ 3     │
+│ Rows only in base        ┆ 1     │
+│ Rows only in compare     ┆ 1     │
+│ Rows in base and compare ┆ 2     │
+└──────────────────────────┴───────┘
+Row differences: True
+shape: (2, 3)
+┌────────────┬──────────┬─────────────────┐
+│ ID         ┆ variable ┆ value           │
+│ ---        ┆ ---      ┆ ---             │
+│ str        ┆ str      ┆ str             │
+╞════════════╪══════════╪═════════════════╡
+│ 12345678   ┆ status   ┆ in base only    │
+│ 1234567810 ┆ status   ┆ in compare only │
+└────────────┴──────────┴─────────────────┘
+Value summary:
+shape: (1, 2)
+┌──────────────────────────────┬───────┐
+│ Value Differences for Column ┆ Count │
+│ ---                          ┆ ---   │
+│ str                          ┆ i64   │
+╞══════════════════════════════╪═══════╡
+│ Example1                     ┆ 1     │
+└──────────────────────────────┴───────┘
+Value differences: True
+shape: (1, 4)
+┌─────────┬──────────┬──────┬─────────┐
+│ ID      ┆ variable ┆ base ┆ compare │
+│ ---     ┆ ---      ┆ ---  ┆ ---     │
+│ str     ┆ str      ┆ i64  ┆ i64     │
+╞═════════╪══════════╪══════╪═════════╡
+│ 1234567 ┆ Example1 ┆ 6    ┆ 2       │
+└─────────┴──────────┴──────┴─────────┘
+All differences summary:
+shape: (12, 2)
+┌─────────────────────────────────┬───────┐
+│ Statistic                       ┆ Count │
+│ ---                             ┆ ---   │
+│ str                             ┆ i64   │
+╞═════════════════════════════════╪═══════╡
+│ Columns in base                 ┆ 3     │
+│ Columns in compare              ┆ 4     │
+│ Columns in base and compare     ┆ 3     │
+│ Columns only in base            ┆ 0     │
+│ Columns only in compare         ┆ 1     │
+│ Columns with schema differences ┆ 1     │
+│ Rows in base                    ┆ 3     │
+│ Rows in compare                 ┆ 3     │
+│ Rows only in base               ┆ 1     │
+│ Rows only in compare            ┆ 1     │
+│ Rows in base and compare        ┆ 2     │
+│ Value diffs Col:Example1        ┆ 1     │
+└─────────────────────────────────┴───────┘
 ```
 </details>
 
