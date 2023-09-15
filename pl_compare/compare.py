@@ -13,7 +13,7 @@ class ComparisonMetadata:
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
     streaming: bool
-    threshold: int | None
+    threshold: float | None
     equality_check: Callable[[str, pl.DataType], pl.Expr] | None
     sample_limit: int
     base_alias: str
@@ -161,7 +161,7 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 def get_equality_check(
     equality_check: Callable[[str, pl.DataType], pl.Expr] | None,
-    threshold: int | None,
+    threshold: float | None,
     col: str,
     format: pl.DataType,
 ) -> pl.Expr:
@@ -206,7 +206,7 @@ def get_combined_tables(
     compare_columns: dict[str, pl.DataType],
     equality_check: Callable[[str, pl.DataType], pl.Expr] | None,
     how_join: Literal["inner", "outer"] = "inner",
-    threshold: int | None = None,
+    threshold: float | None = None,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -396,7 +396,7 @@ class compare:
         base_df: pl.DataFrame | pl.LazyFrame,
         compare_df: pl.DataFrame | pl.LazyFrame,
         streaming: bool = False,
-        threshold: int | None = None,
+        threshold: float | None = None,
         equality_check: Callable[[str, pl.DataType], pl.Expr] | None = None,
         sample_limit: int = 5,
         base_alias: str = "base",
