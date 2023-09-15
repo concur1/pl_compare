@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pl_compare"
-version = "0.1.11"
+version = "0.1.12"
 description = "A tool to find the differences between two tables."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
