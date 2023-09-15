@@ -212,3 +212,37 @@ def test_sample_limit():
         .item()
         == 1
     )
+
+def test_hide_empty_stats():
+    base_df = pl.DataFrame(
+        {
+            "ID": ["123456", "1234567", "12345678"],
+            "Example1": [1, 6, 3],
+            "Example2": [1, 2, 3],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": ["123456", "1234567", "1234567810"],
+            "Example1": [1, 2, 3],
+            "Example2": [1, 2, 3],
+        },
+    )
+    compare_result = compare(["ID"], base_df, compare_df, hide_empty_stats=True)
+    expected_value_differences = pl.DataFrame(
+        {
+            "Statistic": [
+                "Columns in base",
+                "Columns in compare",
+                "Columns in base and compare",
+                "Rows in base",
+                "Rows in compare",
+                "Rows only in base",
+                "Rows only in compare",
+                "Rows in base and compare",
+                "Value diffs Col:Example1",
+            ],
+            "Count": [3, 3, 3, 3, 3, 1, 1, 2, 1, ],
+        }
+    )
+    assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)    

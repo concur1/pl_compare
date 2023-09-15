@@ -19,6 +19,7 @@ class ComparisonMetadata:
     base_alias: str
     compare_alias: str
     schema_comparison: bool
+    hide_empty_stats: bool
 
 
 def get_duplicates(
@@ -96,7 +97,7 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     shared_rows = get_uncertain_row_count(
         grouped_rows.filter(pl.col("in_base") & pl.col("in_compare"))
     )
-    return (
+    final_df = (
         pl.DataFrame(
             {
                 "Rows in base": [shared_rows + base_only_rows],
@@ -109,6 +110,9 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         .transpose(include_header=True, column_names=["Col Differences"])
         .rename({"column": "Statistic", "Col Differences": "Count"})
     )
+    if meta.hide_empty_stats:
+        final_df = final_df.filter(pl.col("Count") > 0 )
+    return final_df
 
 
 def get_base_only_rows(
@@ -226,13 +230,16 @@ def get_combined_tables(
 
 
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.LazyFrame:
-    return (
+    final_df = (
         get_column_value_differences(meta)
         .groupby(["variable"])
         .agg(pl.sum("has_diff"))
         .sort("has_diff", descending=True)
         .rename({"variable": "Value Differences for Column", "has_diff": "Count"})
     )
+    if meta.hide_empty_stats:
+        final_df = final_df.filter(pl.col("Count") > 0 )
+    return final_df
 
 
 def column_value_differences(
@@ -347,6 +354,7 @@ def get_schema_comparison(meta) -> pl.LazyFrame:
             base_alias=f"{meta.base_alias}_format",
             compare_alias=f"{meta.compare_alias}_format",
             schema_comparison=True,
+            hide_empty_stats=False,
         )
     ).drop("variable")
 
@@ -363,7 +371,7 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         .collect(streaming=True)
         .item()
     )
-    return pl.LazyFrame(
+    final_df = pl.LazyFrame(
         {
             "Statistic": [
                 "Columns in base",
@@ -383,6 +391,9 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
             ],
         }
     )
+    if meta.hide_empty_stats:
+        final_df = final_df.filter(pl.col("Count") > 0 )
+    return final_df
 
 
 class compare:
@@ -414,6 +425,7 @@ class compare:
             base_alias,
             compare_alias,
             False,
+            hide_empty_stats
         )
         self.created_frames: dict[str, pl.DataFrame | pl.LazyFrame] = {}
 
