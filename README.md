@@ -337,6 +337,36 @@ shape: (12, 2)
 ```
 </details>
 
+<details>
+<summary>Row differences summary and details</summary>
+
+```python
+import polars as pl
+import pandas as pd
+
+base_df = pd.DataFrame(data=
+    {
+        "ID": ["123456", "1234567", "12345678"],
+        "Example1": [1, 6, 3],
+        "Example2": ["1", "2", "3"],
+    }
+)
+compare_df = pd.DataFrame(data=
+    {
+        "ID": ["123456", "1234567", "1234567810"],
+        "Example1": [1, 2, 3],
+        "Example2": [1, 2, 3],
+        "Example3": [1, 2, 3],
+    },
+)
+
+compare_result = compare(["ID"], pl.from_pandas(base_df), pl.from_pandas(compare_df))
+print(compare_result.report())
+```
+output:
+```
+```
+</details>
 - pandas comparison example
 - custom equality function
 - use of column aliases
