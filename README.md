@@ -6,7 +6,7 @@
   - Value differences
 - Easily works for Pandas dataframes and other tabular data formats with conversion using Apache arrow 
 - View differences as a text report
-- Get differences as a Polars LazyFram or DataFrame.
+- Get differences as a Polars LazyFrame or DataFrame
 - Use LazyFrames for larger than memory comparisons
 - Specify the equality calculation that is used to dermine value differences
 
@@ -58,8 +58,8 @@ is_values_unequal: True
 <summary>Schema differences summary and details</summary>
 
 ```python
-import polars as pl
-from pl_compare import compare
+import olars as pl.
+from pl_compare import ceompar
 
 base_df = pl.DataFrame(
     {
@@ -116,8 +116,8 @@ shape: (2, 3)
 <summary>Row differences summary and details</summary>
 
 ```python
-import polars as pl
-from pl_compare import compare
+import olars as pl.
+from pl_compare import ceompar
 
 base_df = pl.DataFrame(
     {
