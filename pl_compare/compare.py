@@ -234,7 +234,7 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.LazyFrame:
         get_column_value_differences(meta)
         .groupby(["variable"])
         .agg(pl.sum("has_diff"))
-        .sort("has_diff", descending=True)
+        .sort("variable", descending=False)
         .rename({"variable": "Value Differences for Column", "has_diff": "Count"})
     )
     total_differences = final_df.select(
@@ -503,18 +503,27 @@ class compare:
             ]
         )
 
-    def report(self):
-        print("Schema summary:")
-        print(self.schema_differences_summary())
-        print("Schema differences:", self.is_schema_unequal())
-        print(self.schema_differences_sample())
-        print("Row summary:")
-        print(self.row_differences_summary())
-        print("Row differences:", self.is_rows_unequal())
-        print(self.row_differences_sample())
-        print("Value summary:")
-        print(self.value_differences_summary())
-        print("Value differences:", self.is_values_unequal())
-        print(self.value_differences_sample())
-        print("All differences summary:")
-        print(self.all_differences_summary())
+    def report(self, print=print):
+        print(80*"-")
+        print("COMPARISON REPORT")
+        print(80*"-")
+        if not self.is_unequal():
+            print("Tables are exactly equal.")
+            return None
+        if self.is_schema_unequal():
+            print(f'\nSCHEMA DIFFERENCES:\n{self.schema_differences_summary()}\n{self.schema_differences_sample()}')
+        else:
+            print("No Schema differences found.")
+        print(80*"-")
+        if self.is_rows_unequal():
+            print(f'\nROW DIFFERENCES:\n{self.row_differences_summary()}\n{self.row_differences_sample()}')
+        else:
+            print("No Row differences found (when joining by the supplied id_columns).")
+        print(80*"-")
+        if self.is_values_unequal():
+            print(f'\nVALUE DIFFERENCES:\n{self.value_differences_summary()}\n{self.value_differences_sample()}')
+        else:
+            print("No Column Value differences found.")
+        print(80*"-")
+        print("End of Report")
+        print(80*"-")

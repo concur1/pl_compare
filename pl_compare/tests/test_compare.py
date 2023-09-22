@@ -150,8 +150,8 @@ def test_expected_values_returned_all_differences_summary():
                 "Rows only in compare",
                 "Rows in base and compare",
                 "Total Value Differences",
-                "Value diffs Col:Example2",
                 "Value diffs Col:Example1",
+                "Value diffs Col:Example2",
             ],
             "Count": [3, 3, 3, 0, 0, 0, 3, 3, 1, 1, 2, 2, 1, 1],
         }
