@@ -588,15 +588,15 @@ shape: (1, 4)
 - [x] Add license
 - [x] Make package easy to use (i.e. so you only have to import pl_compare and then you can us pl_compare)
 - [x] Add table name labels that can replace 'base' and 'compare'.
+- [x] Update code to use a config dataclass that can be passed between the class and functions.
 - [] Write up docstrings
 - [x] Write up readme (with code examples)
 - [x] Add parameter to hide column differences with 0 differences.
+- [] Update report so that non differences are (optionally) not displayed.
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
-- [] Update report so that non differences are (optionally) not displayed.
 - [] Change id_columns to be named 'join_on' and add a test that checks that abritrary join conditions work.
-- [] Update code to use a config dataclass that can be passed between the class and functions.
 - [] Simplify custom equality checks and add example.
 - [] Test for large amounts of data
 - [] Benchmark for different sizes of data.
