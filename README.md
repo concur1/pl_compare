@@ -593,7 +593,7 @@ shape: (1, 4)
 - [x] Write up readme (with code examples)
 - [x] Add parameter to hide column differences with 0 differences.
 - [x] Add flag to indicate if there are differences between the tables.
-- [] Update report so that non differences are (optionally) not displayed.
+- [x] Update report so that non differences are not displayed.
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
