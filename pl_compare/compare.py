@@ -465,6 +465,15 @@ class compare:
     def value_differences_sample(self):
         return self.get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
 
+    def is_unequal(self):
+        if self.is_schema_unequal():
+            return True
+        if self.is_rows_unequal():
+            return True
+        if self.is_values_unequal():
+            return True
+        return False
+
     def is_schema_unequal(self):
         return self.schema_differences_sample().height != 0
 

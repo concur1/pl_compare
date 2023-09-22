@@ -27,12 +27,19 @@ def compare_df():
     )
 
 
-def test_expected_values_returned_for_bools(base_df, compare_df):
+def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     assert compare_result.is_schema_unequal() is True
     assert compare_result.is_rows_unequal() is True
     assert compare_result.is_values_unequal() is True
+    assert compare_result.is_unequal() is True
 
+def test_expected_values_returned_for_bools_for_equal_dfs(base_df):
+    compare_result = compare(["ID"], base_df, base_df)
+    assert compare_result.is_schema_unequal() is False
+    assert compare_result.is_rows_unequal() is False
+    assert compare_result.is_values_unequal() is False
+    assert compare_result.is_unequal() is False
 
 def test_expected_values_returned_for_schema_summary(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
@@ -143,8 +150,8 @@ def test_expected_values_returned_all_differences_summary():
                 "Rows only in compare",
                 "Rows in base and compare",
                 "Total Value Differences",
-                "Value diffs Col:Example1",
                 "Value diffs Col:Example2",
+                "Value diffs Col:Example1",
             ],
             "Count": [3, 3, 3, 0, 0, 0, 3, 3, 1, 1, 2, 2, 1, 1],
         }
