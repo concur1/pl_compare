@@ -606,5 +606,5 @@ shape: (1, 4)
 - [x] Github actions for publishing
 
 ### not sure of:
-- [] Seperate out dev dependencies from library dependnecies?
+- [] Seperate out dev dependencies from library dependencies?
 - [] Change 'threshold' to be 'granularity'/'numeric granularity?'
