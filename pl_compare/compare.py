@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class ComparisonMetadata:
     """Class for holding the (meta)data used to generate the comparison dataframes."""
 
-    id_columns: list[str]
+    id_columns: List[str]
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
     streaming: bool
