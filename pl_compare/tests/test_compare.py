@@ -26,6 +26,19 @@ def compare_df():
         },
     )
 
+def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
+    compare_result = compare(None, base_df, base_df)
+    assert compare_result.is_schema_unequal() is False
+    assert compare_result.is_rows_unequal() is False
+    assert compare_result.is_values_unequal() is False
+    assert compare_result.is_unequal() is False
+
+def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
+    compare_result = compare([], base_df, base_df)
+    assert compare_result.is_schema_unequal() is False
+    assert compare_result.is_rows_unequal() is False
+    assert compare_result.is_values_unequal() is False
+    assert compare_result.is_unequal() is False
 
 def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
@@ -33,6 +46,13 @@ def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df)
     assert compare_result.is_rows_unequal() is True
     assert compare_result.is_values_unequal() is True
     assert compare_result.is_unequal() is True
+
+def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
+    compare_result = compare([], base_df, base_df)
+    assert compare_result.is_schema_unequal() is False
+    assert compare_result.is_rows_unequal() is False
+    assert compare_result.is_values_unequal() is False
+    assert compare_result.is_unequal() is False
 
 def test_expected_values_returned_for_bools_for_equal_dfs(base_df):
     compare_result = compare(["ID"], base_df, base_df)

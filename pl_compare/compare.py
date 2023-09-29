@@ -422,7 +422,7 @@ class compare:
 
     def __init__(
         self,
-        id_columns: List[str],
+        id_columns: Union[List[str], None],
         base_df: Union[pl.LazyFrame, pl.DataFrame],
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
@@ -433,10 +433,17 @@ class compare:
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
     ):
+        base_lazy_df = lazy_if_dataframe(base_df)
+        compare_lazy_df = lazy_if_dataframe(compare_df)
+        if id_columns is None or id_columns == []:
+            base_lazy_df=base_lazy_df.with_row_count(offset=1).rename({'row_nr': 'row_number'})
+            compare_lazy_df=compare_lazy_df.with_row_count(offset=1).rename({'row_nr': 'row_number'})
+            id_columns = ['row_number']
+
         self.comparison_metadata = ComparisonMetadata(
             id_columns,
-            lazy_if_dataframe(base_df),
-            lazy_if_dataframe(compare_df),
+            base_lazy_df ,
+            compare_lazy_df ,
             streaming,
             threshold,
             equality_check,
