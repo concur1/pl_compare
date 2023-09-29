@@ -1,7 +1,7 @@
 import polars as pl
 import time
 import types
-from typing import Literal, Callable, List
+from typing import Literal, Callable, List, Union, Dict
 from dataclasses import dataclass
 
 
@@ -13,8 +13,8 @@ class ComparisonMetadata:
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
     streaming: bool
-    threshold: float | None
-    equality_check: Callable[[str, pl.DataType], pl.Expr] | None
+    threshold: Union[float, None]
+    equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None]
     sample_limit: int
     base_alias: str
     compare_alias: str
@@ -23,8 +23,8 @@ class ComparisonMetadata:
 
 
 def get_duplicates(
-    df: pl.LazyFrame | pl.DataFrame, id_columns: List[str]
-) -> pl.LazyFrame | pl.DataFrame:
+    df: Union[pl.LazyFrame, pl.DataFrame], id_columns: List[str]
+) -> Union[pl.LazyFrame, pl.DataFrame]:
     ctx = pl.SQLContext(input_table=df)
     query = f"""SELECT {', '.join(id_columns)}, count(*) AS row_count 
                 FROM input_table GROUP BY {", ".join(id_columns)} 
@@ -32,7 +32,7 @@ def get_duplicates(
     return ctx.execute(query)
 
 
-def duplicates_summary(df: pl.LazyFrame | pl.DataFrame) -> pl.LazyFrame | pl.DataFrame:
+def duplicates_summary(df: Union[pl.LazyFrame, pl.DataFrame]) -> Union[pl.LazyFrame, pl.DataFrame]:
     ctx = pl.SQLContext(input_table=df)
     query = """SELECT  (sum(row_count)-count(*)) AS TOTAL_DUPLICATE_ROWS, 
                    (max(row_count)-1) AS MAXIMUM_DUPLICATES_FOR_AN_ID 
@@ -40,27 +40,27 @@ def duplicates_summary(df: pl.LazyFrame | pl.DataFrame) -> pl.LazyFrame | pl.Dat
     return ctx.execute(query)
 
 
-def duplicate_examples(df: pl.LazyFrame | pl.DataFrame) -> pl.LazyFrame | pl.DataFrame:
+def duplicate_examples(df: Union[pl.LazyFrame, pl.DataFrame]) -> Union[pl.LazyFrame, pl.DataFrame]:
     ctx = pl.SQLContext(input_table=df)
     query = """SELECT * EXCLUDE(row_count), (row_count-1) AS DUPLICATES FROM input_table"""
     return ctx.execute(query)
 
 
-def collect_if_lazy(df: pl.LazyFrame | pl.DataFrame) -> pl.DataFrame:
+def collect_if_lazy(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.DataFrame:
     if isinstance(df, pl.LazyFrame):
         df = df.collect(streaming=True)
     return df
 
 
-def lazy_if_dataframe(df: pl.LazyFrame | pl.DataFrame) -> pl.LazyFrame:
+def lazy_if_dataframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.LazyFrame:
     if isinstance(df, pl.DataFrame):
         df = df.lazy()
     return df
 
 
 def set_df_type(
-    df: pl.LazyFrame | pl.DataFrame, streaming: bool = False
-) -> pl.LazyFrame | pl.DataFrame:
+    df: Union[pl.LazyFrame, pl.DataFrame], streaming: bool = False
+) -> Union[pl.LazyFrame, pl.DataFrame]:
     if streaming:
         return lazy_if_dataframe(df)
     if not streaming:
@@ -116,7 +116,7 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
 
 
 def get_base_only_rows(
-    id_columns: list[str],
+    id_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
 ) -> pl.LazyFrame:
@@ -129,7 +129,7 @@ def get_base_only_rows(
 
 
 def get_compare_only_rows(
-    id_columns: list[str],
+    id_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
 ) -> pl.LazyFrame:
@@ -164,8 +164,8 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 
 def get_equality_check(
-    equality_check: Callable[[str, pl.DataType], pl.Expr] | None,
-    threshold: float | None,
+    equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None],
+    threshold: Union[float, None],
     col: str,
     format: pl.DataType,
 ) -> pl.Expr:
@@ -204,13 +204,13 @@ def get_equality_check(
 
 
 def get_combined_tables(
-    id_columns: list[str],
+    id_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
-    compare_columns: dict[str, pl.DataType],
-    equality_check: Callable[[str, pl.DataType], pl.Expr] | None,
+    compare_columns: Dict[str, pl.DataType],
+    equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
-    threshold: float | None = None,
+    threshold: Union[float, None] = None,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -250,7 +250,7 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 
 def column_value_differences(
-    id_columns: list[str], compare_column: str, combined_tables: pl.LazyFrame
+    id_columns: List[str], compare_column: str, combined_tables: pl.LazyFrame
 ) -> pl.LazyFrame:
     final = combined_tables.filter(f"{compare_column}_has_diff").select(
         [pl.lit(compare_column).alias("Compare Column")]
@@ -263,10 +263,10 @@ def column_value_differences(
     return final
 
 
-def get_columns_to_compare(meta) -> dict[str, pl.DataType]:
+def get_columns_to_compare(meta) -> Dict[str, pl.DataType]:
     # if schema_comparison:
     #    return ["format"]
-    columns_to_exclude: list[str] = []
+    columns_to_exclude: List[str] = []
     if not meta.schema_comparison:
         columns_to_exclude.extend(
             get_schema_comparison(meta)
@@ -410,12 +410,12 @@ class compare:
 
     def __init__(
         self,
-        id_columns: list[str],
-        base_df: pl.DataFrame | pl.LazyFrame,
-        compare_df: pl.DataFrame | pl.LazyFrame,
+        id_columns: List[str],
+        base_df: Union[pl.LazyFrame, pl.DataFrame],
+        compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
-        threshold: float | None = None,
-        equality_check: Callable[[str, pl.DataType], pl.Expr] | None = None,
+        threshold: Union[float, None] = None,
+        equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None] = None,
         sample_limit: int = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
@@ -434,11 +434,11 @@ class compare:
             False,
             hide_empty_stats,
         )
-        self.created_frames: dict[str, pl.DataFrame | pl.LazyFrame] = {}
+        self.created_frames: Dict[str, pl.DataFrame | pl.LazyFrame] = {}
 
     def get_or_create(
         self, func: types.FunctionType, *args
-    ) -> dict[str, pl.LazyFrame | pl.DataFrame]:
+    ) -> Dict[str, Union[pl.LazyFrame, pl.DataFrame]]:
         if func.__name__ not in self.created_frames:
             self.created_frames[func.__name__] = set_df_type(
                 func(*args), streaming=self.comparison_metadata.streaming
