@@ -7,7 +7,6 @@ format:
 	-black $(SRCPATH)
 	-ruff $(SRCPATH)
 	-black --check $(SRCPATH)
-	-mypy --strict $(SRCPATH)
 
 .PHONY: check
 check:
