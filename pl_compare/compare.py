@@ -614,7 +614,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of all differences.
         """
-        return pl.concat(
+        return pl.concat( # type: ignore 
             [
                 self.schema_differences_summary(),
                 self.row_differences_summary(),
