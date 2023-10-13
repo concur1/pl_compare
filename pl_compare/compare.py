@@ -1,6 +1,6 @@
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
-import time
+from polars.type_aliases import PolarsType
 import types
 from typing import Literal, Callable, List, Union, Dict, Any
 from dataclasses import dataclass
