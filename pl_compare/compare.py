@@ -85,7 +85,7 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     )
     grouped_rows = (
         combined_table.select(meta.id_columns + ["in_base", "in_compare"])
-        .groupby(["in_base", "in_compare"])
+        .group_by(["in_base", "in_compare"])
         .agg(pl.count())
     )
 
@@ -233,7 +233,7 @@ def get_combined_tables(
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     final_df = (
         get_column_value_differences(meta)
-        .groupby(["variable"])
+        .group_by(["variable"])
         .agg(pl.sum("has_diff"))
         .sort("variable", descending=False)
         .rename({"variable": "Value Differences for Column", "has_diff": "Count"})
