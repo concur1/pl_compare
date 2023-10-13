@@ -402,10 +402,11 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         final_df = final_df.filter(pl.col("Count") > 0)
     return final_df
 
-class FuncAppend():
-    def __init__(self, func: Callable[[str], None]=None):
+
+class FuncAppend:
+    def __init__(self, func: Callable[[str], None] = None):
         self.special_list = []
-        self.func=func
+        self.func = func
 
     def __repr__(self) -> str:
         return str("\n".join(self.special_list))
@@ -414,6 +415,7 @@ class FuncAppend():
         if self.func is not None:
             self.func(value)
         self.special_list.append(value)
+
 
 class compare:
     """
@@ -436,14 +438,16 @@ class compare:
         base_lazy_df = lazy_if_dataframe(base_df)
         compare_lazy_df = lazy_if_dataframe(compare_df)
         if id_columns is None or id_columns == []:
-            base_lazy_df=base_lazy_df.with_row_count(offset=1).rename({'row_nr': 'row_number'})
-            compare_lazy_df=compare_lazy_df.with_row_count(offset=1).rename({'row_nr': 'row_number'})
-            id_columns = ['row_number']
+            base_lazy_df = base_lazy_df.with_row_count(offset=1).rename({"row_nr": "row_number"})
+            compare_lazy_df = compare_lazy_df.with_row_count(offset=1).rename(
+                {"row_nr": "row_number"}
+            )
+            id_columns = ["row_number"]
 
         self.comparison_metadata = ComparisonMetadata(
             id_columns,
-            base_lazy_df ,
-            compare_lazy_df ,
+            base_lazy_df,
+            compare_lazy_df,
             streaming,
             threshold,
             equality_check,
@@ -522,31 +526,35 @@ class compare:
             ]
         )
 
-    def report(self, print: Callable[[str], None]=None):
-
+    def report(self, print: Callable[[str], None] = None):
         combined = FuncAppend(print)
-        combined.append(80*"-")
+        combined.append(80 * "-")
         combined.append("COMPARISON REPORT")
-        combined.append(80*"-")
+        combined.append(80 * "-")
         if not self.is_unequal():
             combined.append("Tables are exactly equal.")
             return None
         if self.is_schema_unequal():
-            combined.append(f'\nSCHEMA DIFFERENCES:\n{self.schema_differences_summary()}\n{self.schema_differences_sample()}')
+            combined.append(
+                f"\nSCHEMA DIFFERENCES:\n{self.schema_differences_summary()}\n{self.schema_differences_sample()}"
+            )
         else:
             combined.append("No Schema differences found.")
-        combined.append(80*"-")
+        combined.append(80 * "-")
         if self.is_rows_unequal():
-            combined.append(f'\nROW DIFFERENCES:\n{self.row_differences_summary()}\n{self.row_differences_sample()}')
+            combined.append(
+                f"\nROW DIFFERENCES:\n{self.row_differences_summary()}\n{self.row_differences_sample()}"
+            )
         else:
             combined.append("No Row differences found (when joining by the supplied id_columns).")
-        combined.append(80*"-")
+        combined.append(80 * "-")
         if self.is_values_unequal():
-            combined.append(f'\nVALUE DIFFERENCES:\n{self.value_differences_summary()}\n{self.value_differences_sample()}')
+            combined.append(
+                f"\nVALUE DIFFERENCES:\n{self.value_differences_summary()}\n{self.value_differences_sample()}"
+            )
         else:
             combined.append("No Column Value differences found.")
-        combined.append(80*"-")
+        combined.append(80 * "-")
         combined.append("End of Report")
-        combined.append(80*"-")
+        combined.append(80 * "-")
         return combined
-        

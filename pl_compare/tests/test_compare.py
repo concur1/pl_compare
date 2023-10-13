@@ -26,6 +26,7 @@ def compare_df():
         },
     )
 
+
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
     compare_result = compare(None, base_df, base_df)
     assert compare_result.is_schema_unequal() is False
@@ -33,12 +34,14 @@ def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_d
     assert compare_result.is_values_unequal() is False
     assert compare_result.is_unequal() is False
 
+
 def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
     compare_result = compare([], base_df, base_df)
     assert compare_result.is_schema_unequal() is False
     assert compare_result.is_rows_unequal() is False
     assert compare_result.is_values_unequal() is False
     assert compare_result.is_unequal() is False
+
 
 def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
@@ -47,6 +50,7 @@ def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df)
     assert compare_result.is_values_unequal() is True
     assert compare_result.is_unequal() is True
 
+
 def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
     compare_result = compare([], base_df, base_df)
     assert compare_result.is_schema_unequal() is False
@@ -54,12 +58,14 @@ def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df)
     assert compare_result.is_values_unequal() is False
     assert compare_result.is_unequal() is False
 
+
 def test_expected_values_returned_for_bools_for_equal_dfs(base_df):
     compare_result = compare(["ID"], base_df, base_df)
     assert compare_result.is_schema_unequal() is False
     assert compare_result.is_rows_unequal() is False
     assert compare_result.is_values_unequal() is False
     assert compare_result.is_unequal() is False
+
 
 def test_expected_values_returned_for_schema_summary(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
@@ -140,19 +146,19 @@ def test_expected_values_returned_value_differences(base_df, compare_df):
 
 def test_expected_values_returned_all_differences_summary():
     base_df = pl.DataFrame(
-            {
-                "ID": ["123456", "1234567", "12345678"],
-                "Example1": [1, 6, 3],
-                "Example2": [100, 2, 3],
-            }
-        )
+        {
+            "ID": ["123456", "1234567", "12345678"],
+            "Example1": [1, 6, 3],
+            "Example2": [100, 2, 3],
+        }
+    )
     compare_df = pl.DataFrame(
-            {
-                "ID": ["123456", "1234567", "1234567810"],
-                "Example1": [1, 2, 3],
-                "Example2": [1, 2, 3],
-            },
-        )
+        {
+            "ID": ["123456", "1234567", "1234567810"],
+            "Example1": [1, 2, 3],
+            "Example2": [1, 2, 3],
+        },
+    )
     pl.Config.set_tbl_rows(100)
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
@@ -179,6 +185,7 @@ def test_expected_values_returned_all_differences_summary():
     print(compare_result.all_differences_summary())
     print(expected_value_differences)
     assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)
+
 
 def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():
     base_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/base.csv")
