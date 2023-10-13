@@ -177,7 +177,9 @@ def get_equality_check(
             | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
         )
 
-    def ignore_numeric_differences_equality_check(col: str, format: Union[pl.DataType, DataTypeClass]) -> pl.Expr:
+    def ignore_numeric_differences_equality_check(
+        col: str, format: Union[pl.DataType, DataTypeClass]
+    ) -> pl.Expr:
         return (
             ((pl.col(f"{col}_base") - pl.col(f"{col}_compare")).abs() > threshold)
             | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
@@ -264,7 +266,9 @@ def column_value_differences(
     return final
 
 
-def get_columns_to_compare(meta: ComparisonMetadata) -> Dict[str, Union[pl.DataType, DataTypeClass]]:
+def get_columns_to_compare(
+    meta: ComparisonMetadata,
+) -> Dict[str, Union[pl.DataType, DataTypeClass]]:
     # if schema_comparison:
     #    return ["format"]
     columns_to_exclude: List[str] = []
@@ -421,6 +425,10 @@ class FuncAppend:
 class compare:
     """
     Compare two dataframes.
+
+    Attributes:
+        comparison_metadata (ComparisonMetadata): Metadata for the comparison.
+        created_frames (Dict[str, Union[pl.DataFrame, pl.LazyFrame]]): Created frames during comparison.
     """
 
     def __init__(
@@ -430,12 +438,29 @@ class compare:
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
         threshold: Union[float, None] = None,
-        equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None] = None,
+        equality_check: Union[
+            Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None
+        ] = None,
         sample_limit: int = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
     ):
+        """
+        Initialize a new instance of the compare class.
+
+        Parameters:
+            id_columns (Union[List[str], None]): Columns to be used as identifiers for comparison.
+            base_df (Union[pl.LazyFrame, pl.DataFrame]): The base dataframe for comparison.
+            compare_df (Union[pl.LazyFrame, pl.DataFrame]): The dataframe to compare with the base dataframe.
+            streaming (bool): Whether the comparison is in streaming mode.
+            threshold (Union[float, None]): The threshold for comparison.
+            equality_check (Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]): The function to check equality.
+            sample_limit (int): The limit for sample comparison.
+            base_alias (str): The alias for the base dataframe.
+            compare_alias (str): The alias for the dataframe to be compared.
+            hide_empty_stats (bool): Whether to hide empty statistics.
+        """
         base_lazy_df = convert_to_lazyframe(base_df)
         compare_lazy_df = convert_to_lazyframe(compare_df)
         if id_columns is None or id_columns == []:
@@ -461,8 +486,20 @@ class compare:
         self.created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
 
     def _get_or_create(
-        self, func: Callable[[ComparisonMetadata], Union[pl.LazyFrame, pl.DataFrame]], *args: ComparisonMetadata
+        self,
+        func: Callable[[ComparisonMetadata], Union[pl.LazyFrame, pl.DataFrame]],
+        *args: ComparisonMetadata,
     ) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get or create a dataframe based on the given function and arguments.
+
+        Parameters:
+            func (Callable[[ComparisonMetadata], Union[pl.LazyFrame, pl.DataFrame]]): The function to get or create the dataframe.
+            *args (ComparisonMetadata): The arguments for the function.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The dataframe.
+        """
         if func.__name__ not in self.created_frames:
             self.created_frames[func.__name__] = set_df_type(
                 func(*args), streaming=self.comparison_metadata.streaming
@@ -470,26 +507,68 @@ class compare:
         return self.created_frames[func.__name__]
 
     def schema_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a summary of schema differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The summary of schema differences.
+        """
         return self._get_or_create(summarise_column_differences, self.comparison_metadata)
 
     def row_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a summary of row differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The summary of row differences.
+        """
         return self._get_or_create(get_row_comparison_summary, self.comparison_metadata)
 
     def row_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a sample of row differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The sample of row differences.
+        """
         return self._get_or_create(get_row_differences, self.comparison_metadata)
 
     def value_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a summary of value differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The summary of value differences.
+        """
         return self._get_or_create(summarise_value_difference, self.comparison_metadata).select(
             "Value Differences for Column", pl.col("Count").cast(pl.Int64).alias("Count")
         )
 
     def schema_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a sample of schema differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The sample of schema differences.
+        """
         return self._get_or_create(get_schema_comparison, self.comparison_metadata)
 
     def value_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a sample of value differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The sample of the value differences.
+        """
         return self._get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
 
     def is_unequal(self) -> bool:
+        """
+        Get a sample of schema differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The sample of schema differences.
+        """
         if self.is_schema_unequal():
             return True
         if self.is_rows_unequal():
@@ -499,15 +578,44 @@ class compare:
         return False
 
     def is_schema_unequal(self) -> bool:
+        """
+        Check if the schemas of the two dataframes are unequal.
+
+        Returns:
+            bool: True if the schemas are unequal, False otherwise.
+        """
         return convert_to_dataframe(self.schema_differences_sample()).height != 0
 
     def is_rows_unequal(self) -> bool:
+        """
+        Check if the rows of the two dataframes are unequal.
+
+        Returns:
+            bool: True if the rows are unequal, False otherwise.
+        """
         return convert_to_dataframe(self.row_differences_sample()).height != 0
 
     def is_values_unequal(self) -> bool:
-        return convert_to_dataframe(set_df_type(self.value_differences_sample(), streaming=False)).height != 0
+        """
+        Check if the values of the two dataframes are unequal.
+
+        Returns:
+            bool: True if the values are unequal, False otherwise.
+        """
+        return (
+            convert_to_dataframe(
+                set_df_type(self.value_differences_sample(), streaming=False)
+            ).height
+            != 0
+        )
 
     def all_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a summary of all differences between the two dataframes.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The summary of all differences.
+        """
         return pl.concat(
             [
                 self.schema_differences_summary(),
@@ -528,6 +636,15 @@ class compare:
         )
 
     def report(self, print: Union[Callable[[str], None], None] = None) -> Union[FuncAppend, None]:
+        """
+        Generate a report of the comparison results.
+
+        Parameters:
+            print (Union[Callable[[str], None], None]): The function to print the report for example you could supply the standard 'print' or logger.info if you want the output to be logged instead of printed.
+
+        Returns:
+            Union[FuncAppend, None]: The report or None if the dataframes are equal.
+        """
         combined = FuncAppend(print)
         combined.append(80 * "-")
         combined.append("COMPARISON REPORT")
