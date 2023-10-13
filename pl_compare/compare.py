@@ -460,7 +460,7 @@ class compare:
         )
         self.created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
 
-    def get_or_create(
+    def _get_or_create(
         self, func: Callable[[ComparisonMetadata], Union[pl.LazyFrame, pl.DataFrame]], *args: ComparisonMetadata
     ) -> Union[pl.LazyFrame, pl.DataFrame]:
         if func.__name__ not in self.created_frames:
@@ -470,24 +470,24 @@ class compare:
         return self.created_frames[func.__name__]
 
     def schema_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
-        return self.get_or_create(summarise_column_differences, self.comparison_metadata)
+        return self._get_or_create(summarise_column_differences, self.comparison_metadata)
 
     def row_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
-        return self.get_or_create(get_row_comparison_summary, self.comparison_metadata)
+        return self._get_or_create(get_row_comparison_summary, self.comparison_metadata)
 
     def row_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
-        return self.get_or_create(get_row_differences, self.comparison_metadata)
+        return self._get_or_create(get_row_differences, self.comparison_metadata)
 
     def value_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
-        return self.get_or_create(summarise_value_difference, self.comparison_metadata).select(
+        return self._get_or_create(summarise_value_difference, self.comparison_metadata).select(
             "Value Differences for Column", pl.col("Count").cast(pl.Int64).alias("Count")
         )
 
     def schema_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
-        return self.get_or_create(get_schema_comparison, self.comparison_metadata)
+        return self._get_or_create(get_schema_comparison, self.comparison_metadata)
 
     def value_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
-        return self.get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
+        return self._get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
 
     def is_unequal(self) -> bool:
         if self.is_schema_unequal():
