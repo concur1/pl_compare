@@ -596,7 +596,7 @@ shape: (1, 4)
 - [x] Update report so that non differences are not displayed.
 - [x] Seperate out dev dependencies from library dependencies?
 - [x] Change 'threshold' to be equality resolution.
-- [] strict MyPy type checking
+- [x] strict MyPy type checking
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
