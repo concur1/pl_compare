@@ -226,7 +226,9 @@ def get_combined_tables(
     )
     return compare_df.with_columns(
         [
-            get_equality_check(equality_check, equality_resolution, col, format).alias(f"{col}_has_diff")
+            get_equality_check(equality_check, equality_resolution, col, format).alias(
+                f"{col}_has_diff"
+            )
             for col, format in compare_columns.items()
         ]
     )
@@ -446,16 +448,16 @@ class compare:
         Initialize a new instance of the compare class.
 
         Parameters:
-            id_columns (Union[List[str], None]): Columns to be used as identifiers for comparison.
+            id_columns (Union[List[str], None]): Columns to be joined on for the comparison. If "None" is supplied then the row number for each dataframe will be used instead.
             base_df (Union[pl.LazyFrame, pl.DataFrame]): The base dataframe for comparison.
-            compare_df (Union[pl.LazyFrame, pl.DataFrame]): The dataframe to compare with the base dataframe.
-            streaming (bool): Whether the comparison is in streaming mode.
-            equality_resolution (Union[float, None]): The equality_resolution for comparison.
+            compare_df (Union[pl.LazyFrame, pl.DataFrame]): The dataframe that will be compared with the base dataframe.
+            streaming (bool): Whether the comparison will return LazyFrames (defaults to False).
+            equality_resolution (Union[float, None]): The equality_resolution for comparison. Applies to numeric values only. If the difference between two values is greater than the equality_resolution then the values are considered to be unequal.
             equality_check (Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]): The function to check equality.
-            sample_limit (int): The limit for sample comparison.
-            base_alias (str): The alias for the base dataframe.
-            compare_alias (str): The alias for the dataframe to be compared.
-            hide_empty_stats (bool): Whether to hide empty statistics.
+            sample_limit (int): The number of rows to sample from the comparison. This only applies to methods that return a sample.
+            base_alias (str): The alias for the base dataframe. This will be displayed in the final result.
+            compare_alias (str): The alias for the dataframe to be compared. This will be displayed in the final result.
+            hide_empty_stats (bool): Whether to hide empty statistics. Comparison statistics where there are zero differences will be excluded from the result.
         """
         base_lazy_df = convert_to_lazyframe(base_df)
         compare_lazy_df = convert_to_lazyframe(compare_df)
