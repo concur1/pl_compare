@@ -1,4 +1,5 @@
 import polars as pl
+from polars.datatypes.classes import DataTypeClass
 import time
 import types
 from typing import Literal, Callable, List, Union, Dict, Any
@@ -14,7 +15,7 @@ class ComparisonMetadata:
     compare_df: pl.LazyFrame
     streaming: bool
     threshold: Union[float, None]
-    equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None]
+    equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]
     sample_limit: Union[int, None]
     base_alias: str
     compare_alias: str
@@ -164,19 +165,19 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 
 def get_equality_check(
-    equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None],
+    equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     threshold: Union[float, None],
     col: str,
-    format: pl.DataType,
+    format: Union[pl.DataType, DataTypeClass],
 ) -> pl.Expr:
-    def default_equality_check(col: str, format: pl.DataType) -> pl.Expr:
+    def default_equality_check(col: str, format: Union[pl.DataType, DataTypeClass]) -> pl.Expr:
         return (
             (pl.col(f"{col}_base") != pl.col(f"{col}_compare"))
             | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
             | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
         )
 
-    def ignore_numeric_differences_equality_check(col: str, format: pl.DataType) -> pl.Expr:
+    def ignore_numeric_differences_equality_check(col: str, format: Union[pl.DataType, DataTypeClass]) -> pl.Expr:
         return (
             ((pl.col(f"{col}_base") - pl.col(f"{col}_compare")).abs() > threshold)
             | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
@@ -207,8 +208,8 @@ def get_combined_tables(
     id_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
-    compare_columns: Dict[str, pl.DataType],
-    equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None],
+    compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
+    equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
     threshold: Union[float, None] = None,
 ) -> pl.LazyFrame:
@@ -263,7 +264,7 @@ def column_value_differences(
     return final
 
 
-def get_columns_to_compare(meta: ComparisonMetadata) -> Dict[str, pl.DataType]:
+def get_columns_to_compare(meta: ComparisonMetadata) -> Dict[str, Union[pl.DataType, DataTypeClass]]:
     # if schema_comparison:
     #    return ["format"]
     columns_to_exclude: List[str] = []
@@ -429,7 +430,7 @@ class compare:
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
         threshold: Union[float, None] = None,
-        equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None] = None,
+        equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None] = None,
         sample_limit: int = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
