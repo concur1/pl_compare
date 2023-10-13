@@ -425,10 +425,6 @@ class FuncAppend:
 class compare:
     """
     Compare two dataframes.
-
-    Attributes:
-        comparison_metadata (ComparisonMetadata): Metadata for the comparison.
-        created_frames (Dict[str, Union[pl.DataFrame, pl.LazyFrame]]): Created frames during comparison.
     """
 
     def __init__(
@@ -470,7 +466,7 @@ class compare:
             )
             id_columns = ["row_number"]
 
-        self.comparison_metadata = ComparisonMetadata(
+        self._comparison_metadata = ComparisonMetadata(
             id_columns,
             base_lazy_df,
             compare_lazy_df,
@@ -483,7 +479,7 @@ class compare:
             False,
             hide_empty_stats,
         )
-        self.created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
+        self._created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
 
     def _get_or_create(
         self,
@@ -500,11 +496,11 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The dataframe.
         """
-        if func.__name__ not in self.created_frames:
-            self.created_frames[func.__name__] = set_df_type(
-                func(*args), streaming=self.comparison_metadata.streaming
+        if func.__name__ not in self._created_frames:
+            self._created_frames[func.__name__] = set_df_type(
+                func(*args), streaming=self._comparison_metadata.streaming
             )
-        return self.created_frames[func.__name__]
+        return self._created_frames[func.__name__]
 
     def schema_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -513,7 +509,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of schema differences.
         """
-        return self._get_or_create(summarise_column_differences, self.comparison_metadata)
+        return self._get_or_create(summarise_column_differences, self._comparison_metadata)
 
     def row_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -522,7 +518,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of row differences.
         """
-        return self._get_or_create(get_row_comparison_summary, self.comparison_metadata)
+        return self._get_or_create(get_row_comparison_summary, self._comparison_metadata)
 
     def row_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -531,7 +527,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The sample of row differences.
         """
-        return self._get_or_create(get_row_differences, self.comparison_metadata)
+        return self._get_or_create(get_row_differences, self._comparison_metadata)
 
     def value_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -540,7 +536,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of value differences.
         """
-        return self._get_or_create(summarise_value_difference, self.comparison_metadata).select(
+        return self._get_or_create(summarise_value_difference, self._comparison_metadata).select(
             "Value Differences for Column", pl.col("Count").cast(pl.Int64).alias("Count")
         )
 
@@ -551,7 +547,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The sample of schema differences.
         """
-        return self._get_or_create(get_schema_comparison, self.comparison_metadata)
+        return self._get_or_create(get_schema_comparison, self._comparison_metadata)
 
     def value_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -560,14 +556,14 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The sample of the value differences.
         """
-        return self._get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
+        return self._get_or_create(get_column_value_differences_filtered, self._comparison_metadata)
 
     def is_unequal(self) -> bool:
         """
-        Get a sample of schema differences between the two dataframes.
+        Check if the two dataframes are unequal based on schema, rows, and values.
 
         Returns:
-            Union[pl.LazyFrame, pl.DataFrame]: The sample of schema differences.
+            bool: True if the dataframes are unequal, False otherwise.
         """
         if self.is_schema_unequal():
             return True
