@@ -1,7 +1,7 @@
 import polars as pl
 import time
 import types
-from typing import Literal, Callable, List, Union, Dict
+from typing import Literal, Callable, List, Union, Dict, Any
 from dataclasses import dataclass
 
 
@@ -15,7 +15,7 @@ class ComparisonMetadata:
     streaming: bool
     threshold: Union[float, None]
     equality_check: Union[Callable[[str, pl.DataType], pl.Expr], None]
-    sample_limit: int
+    sample_limit: Union[int, None]
     base_alias: str
     compare_alias: str
     schema_comparison: bool
@@ -46,13 +46,13 @@ def duplicate_examples(df: Union[pl.LazyFrame, pl.DataFrame]) -> Union[pl.LazyFr
     return ctx.execute(query)
 
 
-def collect_if_lazy(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.DataFrame:
+def convert_to_dataframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.DataFrame:
     if isinstance(df, pl.LazyFrame):
         df = df.collect(streaming=True)
     return df
 
 
-def lazy_if_dataframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.LazyFrame:
+def convert_to_lazyframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.LazyFrame:
     if isinstance(df, pl.DataFrame):
         df = df.lazy()
     return df
@@ -62,13 +62,13 @@ def set_df_type(
     df: Union[pl.LazyFrame, pl.DataFrame], streaming: bool = False
 ) -> Union[pl.LazyFrame, pl.DataFrame]:
     if streaming:
-        return lazy_if_dataframe(df)
+        return convert_to_lazyframe(df)
     if not streaming:
-        return collect_if_lazy(df)
+        return convert_to_dataframe(df)
 
 
 def get_uncertain_row_count(df: pl.LazyFrame) -> int:
-    df_solid = collect_if_lazy(df.select("count"))
+    df_solid = convert_to_dataframe(df.select("count"))
     if df_solid.height > 0:
         row_count: int = df_solid.item()
         return row_count
@@ -229,7 +229,7 @@ def get_combined_tables(
     )
 
 
-def summarise_value_difference(meta: ComparisonMetadata) -> pl.LazyFrame:
+def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     final_df = (
         get_column_value_differences(meta)
         .groupby(["variable"])
@@ -263,7 +263,7 @@ def column_value_differences(
     return final
 
 
-def get_columns_to_compare(meta) -> Dict[str, pl.DataType]:
+def get_columns_to_compare(meta: ComparisonMetadata) -> Dict[str, pl.DataType]:
     # if schema_comparison:
     #    return ["format"]
     columns_to_exclude: List[str] = []
@@ -285,7 +285,7 @@ def get_columns_to_compare(meta) -> Dict[str, pl.DataType]:
     }
 
 
-def get_column_value_differences(meta) -> pl.LazyFrame:
+def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     how_join: Literal["inner", "outer"] = "inner"
     if meta.schema_comparison:
         how_join = "outer"
@@ -322,7 +322,7 @@ def get_column_value_differences(meta) -> pl.LazyFrame:
     return melted_df
 
 
-def get_column_value_differences_filtered(meta) -> pl.LazyFrame:
+def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFrame:
     df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
@@ -335,7 +335,7 @@ def get_column_value_differences_filtered(meta) -> pl.LazyFrame:
     return filtered_df
 
 
-def get_schema_comparison(meta) -> pl.LazyFrame:
+def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_df_schema = pl.LazyFrame(
         {
             "column": meta.base_df.schema.keys(),
@@ -404,14 +404,14 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 
 class FuncAppend:
-    def __init__(self, func: Callable[[str], None] = None):
-        self.special_list = []
+    def __init__(self, func: Union[Callable[[str], None], None] = None):
+        self.special_list: List[str] = []
         self.func = func
 
     def __repr__(self) -> str:
         return str("\n".join(self.special_list))
 
-    def append(self, value: str):
+    def append(self, value: str) -> None:
         if self.func is not None:
             self.func(value)
         self.special_list.append(value)
@@ -435,8 +435,8 @@ class compare:
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
     ):
-        base_lazy_df = lazy_if_dataframe(base_df)
-        compare_lazy_df = lazy_if_dataframe(compare_df)
+        base_lazy_df = convert_to_lazyframe(base_df)
+        compare_lazy_df = convert_to_lazyframe(compare_df)
         if id_columns is None or id_columns == []:
             base_lazy_df = base_lazy_df.with_row_count(offset=1).rename({"row_nr": "row_number"})
             compare_lazy_df = compare_lazy_df.with_row_count(offset=1).rename(
@@ -457,38 +457,38 @@ class compare:
             False,
             hide_empty_stats,
         )
-        self.created_frames: Dict[str, pl.DataFrame | pl.LazyFrame] = {}
+        self.created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
 
     def get_or_create(
-        self, func: types.FunctionType, *args
-    ) -> Dict[str, Union[pl.LazyFrame, pl.DataFrame]]:
+        self, func: Callable[[ComparisonMetadata], Union[pl.LazyFrame, pl.DataFrame]], *args: ComparisonMetadata
+    ) -> Union[pl.LazyFrame, pl.DataFrame]:
         if func.__name__ not in self.created_frames:
             self.created_frames[func.__name__] = set_df_type(
                 func(*args), streaming=self.comparison_metadata.streaming
             )
-        return self.created_frames.get(func.__name__)
+        return self.created_frames[func.__name__]
 
-    def schema_differences_summary(self):
+    def schema_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return self.get_or_create(summarise_column_differences, self.comparison_metadata)
 
-    def row_differences_summary(self):
+    def row_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return self.get_or_create(get_row_comparison_summary, self.comparison_metadata)
 
-    def row_differences_sample(self):
+    def row_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return self.get_or_create(get_row_differences, self.comparison_metadata)
 
-    def value_differences_summary(self):
+    def value_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return self.get_or_create(summarise_value_difference, self.comparison_metadata).select(
             "Value Differences for Column", pl.col("Count").cast(pl.Int64).alias("Count")
         )
 
-    def schema_differences_sample(self):
+    def schema_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return self.get_or_create(get_schema_comparison, self.comparison_metadata)
 
-    def value_differences_sample(self):
+    def value_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return self.get_or_create(get_column_value_differences_filtered, self.comparison_metadata)
 
-    def is_unequal(self):
+    def is_unequal(self) -> bool:
         if self.is_schema_unequal():
             return True
         if self.is_rows_unequal():
@@ -497,16 +497,16 @@ class compare:
             return True
         return False
 
-    def is_schema_unequal(self):
-        return self.schema_differences_sample().height != 0
+    def is_schema_unequal(self) -> bool:
+        return convert_to_dataframe(self.schema_differences_sample()).height != 0
 
-    def is_rows_unequal(self):
-        return self.row_differences_sample().height != 0
+    def is_rows_unequal(self) -> bool:
+        return convert_to_dataframe(self.row_differences_sample()).height != 0
 
-    def is_values_unequal(self):
-        return set_df_type(self.value_differences_sample(), streaming=False).height != 0
+    def is_values_unequal(self) -> bool:
+        return convert_to_dataframe(set_df_type(self.value_differences_sample(), streaming=False)).height != 0
 
-    def all_differences_summary(self):
+    def all_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         return pl.concat(
             [
                 self.schema_differences_summary(),
@@ -526,7 +526,7 @@ class compare:
             ]
         )
 
-    def report(self, print: Callable[[str], None] = None):
+    def report(self, print: Union[Callable[[str], None], None] = None) -> Union[FuncAppend, None]:
         combined = FuncAppend(print)
         combined.append(80 * "-")
         combined.append("COMPARISON REPORT")
