@@ -606,5 +606,6 @@ shape: (1, 4)
 - [] Benchmark for different sizes of data.
 - [] Github actions for testing
 - [] Github actions for linting
+- [] Investigate use for very large datasets 50GB-100GB. Can this be done using LazyFrames only?
 - [x] Github actions for publishing
 
