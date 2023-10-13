@@ -589,7 +589,7 @@ shape: (1, 4)
 - [x] Make package easy to use (i.e. so you only have to import pl_compare and then you can us pl_compare)
 - [x] Add table name labels that can replace 'base' and 'compare'.
 - [x] Update code to use a config dataclass that can be passed between the class and functions.
-- [] Write up docstrings
+- [x] Write up docstrings
 - [x] Write up readme (with code examples)
 - [x] Add parameter to hide column differences with 0 differences.
 - [x] Add flag to indicate if there are differences between the tables.
