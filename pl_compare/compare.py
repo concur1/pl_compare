@@ -14,7 +14,7 @@ class ComparisonMetadata:
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
     streaming: bool
-    threshold: Union[float, None]
+    equality_resolution: Union[float, None]
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]
     sample_limit: Union[int, None]
     base_alias: str
@@ -166,7 +166,7 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 def get_equality_check(
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
-    threshold: Union[float, None],
+    equality_resolution: Union[float, None],
     col: str,
     format: Union[pl.DataType, DataTypeClass],
 ) -> pl.Expr:
@@ -181,14 +181,14 @@ def get_equality_check(
         col: str, format: Union[pl.DataType, DataTypeClass]
     ) -> pl.Expr:
         return (
-            ((pl.col(f"{col}_base") - pl.col(f"{col}_compare")).abs() > threshold)
+            ((pl.col(f"{col}_base") - pl.col(f"{col}_compare")).abs() > equality_resolution)
             | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
             | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
         )
 
     if equality_check is not None:
         return equality_check(col, format)
-    if threshold is not None and format in [
+    if equality_resolution is not None and format in [
         pl.Float32,
         pl.Float64,
         pl.Decimal,
@@ -213,7 +213,7 @@ def get_combined_tables(
     compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
-    threshold: Union[float, None] = None,
+    equality_resolution: Union[float, None] = None,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -226,7 +226,7 @@ def get_combined_tables(
     )
     return compare_df.with_columns(
         [
-            get_equality_check(equality_check, threshold, col, format).alias(f"{col}_has_diff")
+            get_equality_check(equality_check, equality_resolution, col, format).alias(f"{col}_has_diff")
             for col, format in compare_columns.items()
         ]
     )
@@ -301,7 +301,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         meta.compare_df,
         compare_columns,
         meta.equality_check,
-        threshold=meta.threshold,
+        equality_resolution=meta.equality_resolution,
         how_join=how_join,
     )
     melted_df = (
@@ -360,7 +360,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
             base_df=base_df_schema,
             compare_df=compare_df_schema,
             streaming=True,
-            threshold=None,
+            equality_resolution=None,
             equality_check=None,
             sample_limit=None,
             base_alias=f"{meta.base_alias}_format",
@@ -433,7 +433,7 @@ class compare:
         base_df: Union[pl.LazyFrame, pl.DataFrame],
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
-        threshold: Union[float, None] = None,
+        equality_resolution: Union[float, None] = None,
         equality_check: Union[
             Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None
         ] = None,
@@ -450,7 +450,7 @@ class compare:
             base_df (Union[pl.LazyFrame, pl.DataFrame]): The base dataframe for comparison.
             compare_df (Union[pl.LazyFrame, pl.DataFrame]): The dataframe to compare with the base dataframe.
             streaming (bool): Whether the comparison is in streaming mode.
-            threshold (Union[float, None]): The threshold for comparison.
+            equality_resolution (Union[float, None]): The equality_resolution for comparison.
             equality_check (Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]): The function to check equality.
             sample_limit (int): The limit for sample comparison.
             base_alias (str): The alias for the base dataframe.
@@ -471,7 +471,7 @@ class compare:
             base_lazy_df,
             compare_lazy_df,
             streaming,
-            threshold,
+            equality_resolution,
             equality_check,
             sample_limit,
             base_alias,

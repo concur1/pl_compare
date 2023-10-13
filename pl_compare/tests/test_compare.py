@@ -258,7 +258,7 @@ def test_sample_limit():
         == 4
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=2, threshold=1)
+        compare(["ID"], base_df, compare_df, sample_limit=2, equality_resolution=1)
         .value_differences_sample()
         .select(pl.count())
         .item()

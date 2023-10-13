@@ -594,6 +594,9 @@ shape: (1, 4)
 - [x] Add parameter to hide column differences with 0 differences.
 - [x] Add flag to indicate if there are differences between the tables.
 - [x] Update report so that non differences are not displayed.
+- [x] Seperate out dev dependencies from library dependencies?
+- [x] Change 'threshold' to be equality resolution.
+- [] strict MyPy type checking
 - [] Raise error and print examples if duplicates are present.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
@@ -601,11 +604,7 @@ shape: (1, 4)
 - [] Simplify custom equality checks and add example.
 - [] Test for large amounts of data
 - [] Benchmark for different sizes of data.
-- [] strict MyPy type checking
 - [] Github actions for testing
 - [] Github actions for linting
 - [x] Github actions for publishing
 
-### not sure of:
-- [] Seperate out dev dependencies from library dependencies?
-- [] Change 'threshold' to be 'granularity'/'numeric granularity?'
