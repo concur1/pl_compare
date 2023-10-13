@@ -1,0 +1,27 @@
+
+// layout_file.kdl
+
+layout {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+    children 
+    pane split_direction="vertical" {
+        pane name="Helix" edit="."
+        pane stacked=true {
+            pane name="run test" command="poetry" {
+                args "run" "make" "test"
+            } 
+            pane name="run check" command="poetry" {
+                args "run" "make" "check"
+            } 
+            pane name="run format" command="poetry" {
+                args "run" "make" "format"
+            } 
+            pane
+        }
+    }
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+}
