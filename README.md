@@ -597,7 +597,8 @@ shape: (1, 4)
 - [x] Seperate out dev dependencies from library dependencies?
 - [x] Change 'threshold' to be equality resolution.
 - [x] strict MyPy type checking
-- [] Raise error and print examples if duplicates are present.
+- [x] Raise error and print examples if duplicates are present.
+- [] count of total rows to value differences summary
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Add total number of value differences to the value differences summary.
 - [] Change id_columns to be named 'join_on' and add a test that checks that abritrary join conditions work.
