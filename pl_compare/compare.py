@@ -21,7 +21,7 @@ class ComparisonMetadata:
     compare_alias: str
     schema_comparison: bool
     hide_empty_stats: bool
-    validate: str
+    validate: Literal['m:m', 'm:1', '1:m', '1:1']
 
 
 def get_duplicates(
@@ -216,7 +216,7 @@ def get_combined_tables(
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
     equality_resolution: Union[float, None] = None,
-    validate: str = '1:1',
+    validate: Literal['m:m', 'm:1', '1:m', '1:1'] = '1:1',
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -449,7 +449,7 @@ class compare:
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
-        validate: str = '1:1',
+        validate: Literal['m:m', 'm:1', '1:m', '1:1'] = '1:1',
     ):
         """
         Initialize a new instance of the compare class.
