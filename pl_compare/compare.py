@@ -21,6 +21,7 @@ class ComparisonMetadata:
     compare_alias: str
     schema_comparison: bool
     hide_empty_stats: bool
+    validate: str
 
 
 def get_duplicates(
@@ -82,6 +83,7 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         meta.compare_df.select(meta.id_columns + [pl.lit(True).alias("in_compare")]),
         on=meta.id_columns,
         how="outer",
+        validate=meta.validate,
     )
     grouped_rows = (
         combined_table.select(meta.id_columns + ["in_base", "in_compare"])
@@ -122,7 +124,7 @@ def get_base_only_rows(
     compare_df: pl.LazyFrame,
 ) -> pl.LazyFrame:
     combined_table = base_df.select(id_columns).join(
-        compare_df.select(id_columns), on=id_columns, how="anti"
+        compare_df.select(id_columns), on=id_columns, how="anti", 
     )
     return combined_table.select(id_columns + [pl.lit("in base only").alias("status")]).melt(
         id_vars=id_columns, value_vars=["status"]
@@ -214,6 +216,7 @@ def get_combined_tables(
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
     equality_resolution: Union[float, None] = None,
+    validate: str = '1:1',
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -223,6 +226,7 @@ def get_combined_tables(
         compare_df.with_columns([pl.lit(True).alias("in_compare")]),
         on=id_columns,
         how=how_join,
+        validate=validate,
     )
     return compare_df.with_columns(
         [
@@ -305,6 +309,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         meta.equality_check,
         equality_resolution=meta.equality_resolution,
         how_join=how_join,
+        validate=meta.validate,
     )
     melted_df = (
         combined_tables.with_columns(
@@ -369,6 +374,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
             compare_alias=f"{meta.compare_alias}_format",
             schema_comparison=True,
             hide_empty_stats=False,
+            validate='1:1',
         )
     ).drop("variable")
 
@@ -443,6 +449,7 @@ class compare:
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
+        validate: str = '1:1',
     ):
         """
         Initialize a new instance of the compare class.
@@ -458,6 +465,7 @@ class compare:
             base_alias (str): The alias for the base dataframe. This will be displayed in the final result.
             compare_alias (str): The alias for the dataframe to be compared. This will be displayed in the final result.
             hide_empty_stats (bool): Whether to hide empty statistics. Comparison statistics where there are zero differences will be excluded from the result.
+            validate (str): Checks if join is of specified type {‘m:m’, ‘m:1’, ‘1:m’, ‘1:1’ }.
         """
         base_lazy_df = convert_to_lazyframe(base_df)
         compare_lazy_df = convert_to_lazyframe(compare_df)
@@ -480,6 +488,7 @@ class compare:
             compare_alias,
             False,
             hide_empty_stats,
+            validate,
         )
         self._created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
 
@@ -614,7 +623,7 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of all differences.
         """
-        return pl.concat( # type: ignore 
+        return pl.concat(  # type: ignore
             [
                 self.schema_differences_summary(),
                 self.row_differences_summary(),
