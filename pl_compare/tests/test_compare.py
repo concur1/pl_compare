@@ -312,13 +312,14 @@ def test_hide_empty_stats():
     )
     assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)
 
+
 def test_error_raised_when_dupes_supplied_for_1_1_validation():
     base_df = pl.DataFrame(
         {
             "ID": ["123456", "123456", "1234567", "12345678"],
             "ID2": ["123456", "123457", "1234567", "12345678"],
-            "Example1": [1,1, 6, 3],
-            "Example2": [1,1, 2, 3],
+            "Example1": [1, 1, 6, 3],
+            "Example2": [1, 1, 2, 3],
         }
     )
     compare_df = pl.DataFrame(
@@ -330,26 +331,28 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
         },
     )
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, '1:1').value_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:1").value_differences_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, '1:1').row_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:1").row_differences_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, '1:1').value_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "1:1").value_differences_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, '1:1').row_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "1:1").row_differences_summary()
 
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, '1:m').value_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:m").value_differences_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, '1:m').row_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:m").row_differences_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, 'm:1').value_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "m:1").value_differences_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, 'm:1').row_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "m:1").row_differences_summary()
 
     # the following rise an error with this message:
-    #E       polars.exceptions.ComputeError: 1:1 validation on a INNER is not yet supported for multiple keys
-    #compare(["ID", "ID"], base_df, compare_df, 'm:1').value_differences_summary()
-    #compare(["ID", "ID"], base_df, compare_df, 'm:1').row_differences_summary()
-    #compare(["ID", "ID"], compare_df, base_df, '1:m').value_differences_summary()
-    #compare(["ID", "ID"], compare_df, base_df, '1:m').row_differences_summary()
+    # E       polars.exceptions.ComputeError: 1:1 validation on a INNER is not yet supported for multiple keys
+    # compare(["ID", "ID"], base_df, compare_df, 'm:1').value_differences_summary()
+    # compare(["ID", "ID"], base_df, compare_df, 'm:1').row_differences_summary()
+    # compare(["ID", "ID"], compare_df, base_df, '1:m').value_differences_summary()
+    # compare(["ID", "ID"], compare_df, base_df, '1:m').row_differences_summary()
+
+

@@ -456,7 +456,7 @@ shape: (12, 2)
 
 
 <details>
-<summary>Specify a threshold to control the frandularity of hte comparison for numeric columns.</summary>
+<summary>Specify a threshold to control the granularity of the comparison for numeric columns.</summary>
 
 ```python
 import polars as pl
@@ -569,6 +569,69 @@ shape: (1, 4)
 ╞═════════╪══════════╪═══════════════╪══════════════╡
 │ 1234567 ┆ Example1 ┆ 6             ┆ 2            │
 └─────────┴──────────┴───────────────┴──────────────┘
+```
+</details>
+
+<details>
+<summary>Assert two frames are equal for a test</summary>
+
+```
+import polars as pl
+import pytest
+from pl_compare.compare import compare
+    
+def test_example():
+    base_df = pl.DataFrame(
+        {
+            "ID": ["123456", "1234567", "12345678"],
+            "Example1": [1, 6, 3],
+            "Example2": [1, 2, 3],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": ["123456", "1234567", "12345678"],
+            "Example1": [1, 6, 9],
+            "Example2": [1, 2, 3],
+        }
+    )
+    comparison = compare(["ID"], base_df, compare_df)
+    if comparison.is_unequal():
+        raise Exception(comparison.report())
+```
+output when runningn pytest:
+```
+E           Exception: --------------------------------------------------------------------------------
+E           COMPARISON REPORT
+E           --------------------------------------------------------------------------------
+E           No Schema differences found.
+E           --------------------------------------------------------------------------------
+E           No Row differences found (when joining by the supplied id_columns).
+E           --------------------------------------------------------------------------------
+E
+E           VALUE DIFFERENCES:
+E           shape: (3, 2)
+E           ┌──────────────────────────────┬───────┐
+E           │ Value Differences for Column ┆ Count │
+E           │ ---                          ┆ ---   │
+E           │ str                          ┆ i64   │
+E           ╞══════════════════════════════╪═══════╡
+E           │ Total Value Differences      ┆ 1     │
+E           │ Example1                     ┆ 1     │
+E           │ Example2                     ┆ 0     │
+E           └──────────────────────────────┴───────┘
+E           shape: (1, 4)
+E           ┌──────────┬──────────┬──────┬─────────┐
+E           │ ID       ┆ variable ┆ base ┆ compare │
+E           │ ---      ┆ ---      ┆ ---  ┆ ---     │
+E           │ str      ┆ str      ┆ i64  ┆ i64     │
+E           ╞══════════╪══════════╪══════╪═════════╡
+E           │ 12345678 ┆ Example1 ┆ 3    ┆ 9       │
+E           └──────────┴──────────┴──────┴─────────┘
+E           --------------------------------------------------------------------------------
+E           End of Report
+E           --------------------------------------------------------------------------------
+
 ```
 </details>
 

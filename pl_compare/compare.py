@@ -21,7 +21,7 @@ class ComparisonMetadata:
     compare_alias: str
     schema_comparison: bool
     hide_empty_stats: bool
-    validate: Literal['m:m', 'm:1', '1:m', '1:1']
+    validate: Literal["m:m", "m:1", "1:m", "1:1"]
 
 
 def get_duplicates(
@@ -124,7 +124,9 @@ def get_base_only_rows(
     compare_df: pl.LazyFrame,
 ) -> pl.LazyFrame:
     combined_table = base_df.select(id_columns).join(
-        compare_df.select(id_columns), on=id_columns, how="anti", 
+        compare_df.select(id_columns),
+        on=id_columns,
+        how="anti",
     )
     return combined_table.select(id_columns + [pl.lit("in base only").alias("status")]).melt(
         id_vars=id_columns, value_vars=["status"]
@@ -216,7 +218,7 @@ def get_combined_tables(
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
     equality_resolution: Union[float, None] = None,
-    validate: Literal['m:m', 'm:1', '1:m', '1:1'] = '1:1',
+    validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -374,7 +376,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
             compare_alias=f"{meta.compare_alias}_format",
             schema_comparison=True,
             hide_empty_stats=False,
-            validate='1:1',
+            validate="1:1",
         )
     ).drop("variable")
 
@@ -449,7 +451,7 @@ class compare:
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
-        validate: Literal['m:m', 'm:1', '1:m', '1:1'] = '1:1',
+        validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
     ):
         """
         Initialize a new instance of the compare class.
