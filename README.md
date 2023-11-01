@@ -476,12 +476,6 @@ compare_df = pl.DataFrame(
     },
 )
 
-def custom_equality_check(col: str, format: pl.DataType) -> pl.Expr:
-    return (
-        (pl.col(f"{col}_base") != pl.col(f"{col}_compare"))
-        | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
-        | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
-    )
 print("With equality_resolution of 0.01")
 compare_result = compare(["ID"], base_df, compare_df, equality_resolution=0.01)
 print(compare_result.value_differences_sample())
