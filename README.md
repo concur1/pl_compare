@@ -482,13 +482,14 @@ def custom_equality_check(col: str, format: pl.DataType) -> pl.Expr:
         | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
         | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
     )
-print("With threshold of 0.01")
-compare_result = compare(["ID"], base_df, compare_df, threshold=0.01)
+print("With equality_resolution of 0.01")
+compare_result = compare(["ID"], base_df, compare_df, equality_resolution=0.01)
 print(compare_result.value_differences_sample())
-print("With no threshold")
+print("With no equality_resolution")
 compare_result = compare(["ID"], base_df, compare_df)
 print(compare_result.value_differences_sample())
 ```
+
 output:
 ```
 With threshold of 0.01
