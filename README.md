@@ -575,7 +575,7 @@ shape: (1, 4)
 <details>
 <summary>Assert two frames are equal for a test</summary>
 
-```
+```python
 import polars as pl
 import pytest
 from pl_compare.compare import compare
