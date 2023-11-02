@@ -82,8 +82,8 @@ def test_expected_values_returned_for_schema_summary(base_df, compare_df):
             "Count": [3, 4, 3, 0, 1, 1],
         }
     )
-    print(compare_result.schema_differences_summary())
-    assert_frame_equal(compare_result.schema_differences_summary(), expected_schema_summary)
+    print(compare_result.schema_summary())
+    assert_frame_equal(compare_result.schema_summary(), expected_schema_summary)
 
 
 def test_expected_values_returned_for_schema_differences(base_df, compare_df):
@@ -95,7 +95,7 @@ def test_expected_values_returned_for_schema_differences(base_df, compare_df):
             "compare_format": ["Int64", "Int64"],
         }
     )
-    assert_frame_equal(compare_result.schema_differences_sample(), expected_schema_differnces)
+    assert_frame_equal(compare_result.schema_sample(), expected_schema_differnces)
 
 
 def test_expected_values_returned_for_row_summary(base_df, compare_df):
@@ -112,7 +112,7 @@ def test_expected_values_returned_for_row_summary(base_df, compare_df):
             "Count": [3, 3, 1, 1, 2],
         }
     )
-    assert_frame_equal(compare_result.row_differences_summary(), expected_row_summary)
+    assert_frame_equal(compare_result.row_summary(), expected_row_summary)
 
 
 def test_expected_values_returned_row_differences(base_df, compare_df):
@@ -124,7 +124,7 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
             "value": ["in base only", "in compare only"],
         }
     )
-    assert_frame_equal(compare_result.row_differences_sample(), expected_row_differences)
+    assert_frame_equal(compare_result.row_sample(), expected_row_differences)
 
 
 def test_expected_values_returned_value_summary(base_df, compare_df):
@@ -133,7 +133,7 @@ def test_expected_values_returned_value_summary(base_df, compare_df):
         {"Value Differences for Column": ["Total Value Differences", "Example1"], "Count": [1, 1]},
         schema={"Value Differences for Column": pl.Utf8, "Count": pl.Int64},
     )
-    assert_frame_equal(compare_result.value_differences_summary(), expected_value_summary)
+    assert_frame_equal(compare_result.value_summary(), expected_value_summary)
 
 
 def test_expected_values_returned_value_differences(base_df, compare_df):
@@ -141,10 +141,10 @@ def test_expected_values_returned_value_differences(base_df, compare_df):
     expected_value_differences = pl.DataFrame(
         {"ID": ["1234567"], "variable": ["Example1"], "base": [6], "compare": [2]}
     )
-    assert_frame_equal(compare_result.value_differences_sample(), expected_value_differences)
+    assert_frame_equal(compare_result.value_sample(), expected_value_differences)
 
 
-def test_expected_values_returned_all_differences_summary():
+def test_expected_values_returned_all_summary():
     base_df = pl.DataFrame(
         {
             "ID": ["123456", "1234567", "12345678"],
@@ -182,21 +182,21 @@ def test_expected_values_returned_all_differences_summary():
             "Count": [3, 3, 3, 0, 0, 0, 3, 3, 1, 1, 2, 2, 1, 1],
         }
     )
-    print(compare_result.all_differences_summary())
+    print(compare_result.all_summary())
     print(expected_value_differences)
-    assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)
+    assert_frame_equal(compare_result.all_summary(), expected_value_differences)
 
 
 def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():
     base_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/base.csv")
     compare_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/compare.csv")
     compare_result = compare(["ID"], base_df, compare_df)
-    assert isinstance(compare_result.schema_differences_summary(), pl.DataFrame)
-    assert isinstance(compare_result.schema_differences_sample(), pl.DataFrame)
-    assert isinstance(compare_result.row_differences_summary(), pl.DataFrame)
-    assert isinstance(compare_result.row_differences_sample(), pl.DataFrame)
-    assert isinstance(compare_result.value_differences_summary(), pl.DataFrame)
-    assert isinstance(compare_result.value_differences_sample(), pl.DataFrame)
+    assert isinstance(compare_result.schema_summary(), pl.DataFrame)
+    assert isinstance(compare_result.schema_sample(), pl.DataFrame)
+    assert isinstance(compare_result.row_summary(), pl.DataFrame)
+    assert isinstance(compare_result.row_sample(), pl.DataFrame)
+    assert isinstance(compare_result.value_summary(), pl.DataFrame)
+    assert isinstance(compare_result.value_sample(), pl.DataFrame)
 
 
 def test_streaming_input_with_streaming_flag_returns_lazy_dfs():
@@ -204,12 +204,12 @@ def test_streaming_input_with_streaming_flag_returns_lazy_dfs():
     base_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/base.csv")
     compare_df = pl.scan_csv("pl_compare/tests/test_data/scenario_1/compare.csv")
     compare_result = compare(["ID"], base_df, compare_df, streaming=True)
-    assert isinstance(compare_result.schema_differences_summary(), pl.LazyFrame)
-    assert isinstance(compare_result.schema_differences_sample(), pl.LazyFrame)
-    assert isinstance(compare_result.row_differences_summary(), pl.LazyFrame)
-    assert isinstance(compare_result.row_differences_sample(), pl.LazyFrame)
-    assert isinstance(compare_result.value_differences_summary(), pl.LazyFrame)
-    assert isinstance(compare_result.value_differences_sample(), pl.LazyFrame)
+    assert isinstance(compare_result.schema_summary(), pl.LazyFrame)
+    assert isinstance(compare_result.schema_sample(), pl.LazyFrame)
+    assert isinstance(compare_result.row_summary(), pl.LazyFrame)
+    assert isinstance(compare_result.row_sample(), pl.LazyFrame)
+    assert isinstance(compare_result.value_summary(), pl.LazyFrame)
+    assert isinstance(compare_result.value_sample(), pl.LazyFrame)
 
 
 def test_sample_limit():
@@ -231,35 +231,35 @@ def test_sample_limit():
     )
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=1)
-        .value_differences_sample()
+        .value_sample()
         .select(pl.count())
         .item()
         == 1
     )
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=1)
-        .row_differences_sample()
+        .row_sample()
         .select(pl.count())
         .item()
         == 2
     )
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=2)
-        .value_differences_sample()
+        .value_sample()
         .select(pl.count())
         .item()
         == 2
     )
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=2)
-        .row_differences_sample()
+        .row_sample()
         .select(pl.count())
         .item()
         == 4
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=2, equality_resolution=1)
-        .value_differences_sample()
+        compare(["ID"], base_df, compare_df, sample_limit=2, resolution=1)
+        .value_sample()
         .select(pl.count())
         .item()
         == 1
@@ -310,7 +310,7 @@ def test_hide_empty_stats():
             ],
         }
     )
-    assert_frame_equal(compare_result.all_differences_summary(), expected_value_differences)
+    assert_frame_equal(compare_result.all_summary(), expected_value_differences)
 
 
 def test_error_raised_when_dupes_supplied_for_1_1_validation():
@@ -331,28 +331,28 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
         },
     )
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:1").value_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:1").value_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:1").row_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:1").row_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "1:1").value_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "1:1").value_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "1:1").row_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "1:1").row_summary()
 
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:m").value_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:m").value_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:m").row_differences_summary()
+        compare(["ID", "ID2"], base_df, compare_df, "1:m").row_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "m:1").value_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "m:1").value_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "m:1").row_differences_summary()
+        compare(["ID", "ID2"], compare_df, base_df, "m:1").row_summary()
 
     # the following rise an error with this message:
     # E       polars.exceptions.ComputeError: 1:1 validation on a INNER is not yet supported for multiple keys
-    # compare(["ID", "ID"], base_df, compare_df, 'm:1').value_differences_summary()
-    # compare(["ID", "ID"], base_df, compare_df, 'm:1').row_differences_summary()
-    # compare(["ID", "ID"], compare_df, base_df, '1:m').value_differences_summary()
-    # compare(["ID", "ID"], compare_df, base_df, '1:m').row_differences_summary()
+    # compare(["ID", "ID"], base_df, compare_df, 'm:1').value_summary()
+    # compare(["ID", "ID"], base_df, compare_df, 'm:1').row_summary()
+    # compare(["ID", "ID"], compare_df, base_df, '1:m').value_summary()
+    # compare(["ID", "ID"], compare_df, base_df, '1:m').row_summary()
 
 

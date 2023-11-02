@@ -78,14 +78,14 @@ compare_df = pl.DataFrame(
 )
 
 compare_result = compare(["ID"], base_df, compare_df)
-print("schema_differences_summary()")
-print(compare_result.schema_differences_summary())
-print("schema_differences_sample()")
-print(compare_result.schema_differences_sample())
+print("schema_summary()")
+print(compare_result.schema_summary())
+print("schema_sample()")
+print(compare_result.schema_sample())
 ```
 output:
 ```
-schema_differences_summary()
+schema_summary()
 shape: (6, 2)
 ┌─────────────────────────────────┬───────┐
 │ Statistic                       ┆ Count │
@@ -99,7 +99,7 @@ shape: (6, 2)
 │ Columns only in compare         ┆ 1     │
 │ Columns with schema differences ┆ 1     │
 └─────────────────────────────────┴───────┘
-schema_differences_sample()
+schema_sample()
 shape: (2, 3)
 ┌──────────┬─────────────┬────────────────┐
 │ column   ┆ base_format ┆ compare_format │
@@ -136,14 +136,14 @@ compare_df = pl.DataFrame(
 )
 
 compare_result = compare(["ID"], base_df, compare_df)
-print("row_differences_summary()")
-print(compare_result.row_differences_summary())
-print("row_differences_sample()")
-print(compare_result.row_differences_sample())
+print("row_summary()")
+print(compare_result.row_summary())
+print("row_sample()")
+print(compare_result.row_sample())
 ```
 output:
 ```
-row_differences_summary()
+row_summary()
 shape: (5, 2)
 ┌──────────────────────────┬───────┐
 │ Statistic                ┆ Count │
@@ -156,7 +156,7 @@ shape: (5, 2)
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
-row_differences_sample()
+row_sample()
 shape: (2, 3)
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
@@ -193,14 +193,14 @@ compare_df = pl.DataFrame(
 )
 
 compare_result = compare(["ID"], base_df, compare_df)
-print("value_differences_summary()")
-print(compare_result.value_differences_summary())
-print("value_differences_sample()")
-print(compare_result.value_differences_sample())
+print("value_summary()")
+print(compare_result.value_summary())
+print("value_sample()")
+print(compare_result.value_sample())
 ```
 output:
 ```
-value_differences_summary()
+value_summary()
 shape: (1, 2)
 ┌──────────────────────────────┬───────┐
 │ Value Differences for Column ┆ Count │
@@ -209,7 +209,7 @@ shape: (1, 2)
 ╞══════════════════════════════╪═══════╡
 │ Example1                     ┆ 1     │
 └──────────────────────────────┴───────┘
-value_differences_sample()
+value_sample()
 shape: (1, 4)
 ┌─────────┬──────────┬──────┬─────────┐
 │ ID      ┆ variable ┆ base ┆ compare │
@@ -478,10 +478,10 @@ compare_df = pl.DataFrame(
 
 print("With equality_resolution of 0.01")
 compare_result = compare(["ID"], base_df, compare_df, equality_resolution=0.01)
-print(compare_result.value_differences_sample())
+print(compare_result.value_sample())
 print("With no equality_resolution")
 compare_result = compare(["ID"], base_df, compare_df)
-print(compare_result.value_differences_sample())
+print(compare_result.value_sample())
 ```
 
 output:
@@ -538,14 +538,14 @@ compare_result = compare(["ID"],
                          base_alias="before_change", 
                          compare_alias="after_change")
 
-print("value_differences_summary()")
-print(compare_result.schema_differences_sample())
-print("value_differences_sample()")
-print(compare_result.value_differences_sample())
+print("value_summary()")
+print(compare_result.schema_sample())
+print("value_sample()")
+print(compare_result.value_sample())
 ```
 output:
 ```
-value_differences_summary()
+value_summary()
 shape: (2, 3)
 ┌──────────┬──────────────────────┬─────────────────────┐
 │ column   ┆ before_change_format ┆ after_change_format │
@@ -555,7 +555,7 @@ shape: (2, 3)
 │ Example2 ┆ Utf8                 ┆ Int64               │
 │ Example3 ┆ null                 ┆ Int64               │
 └──────────┴──────────────────────┴─────────────────────┘
-value_differences_sample()
+value_sample()
 shape: (1, 4)
 ┌─────────┬──────────┬───────────────┬──────────────┐
 │ ID      ┆ variable ┆ before_change ┆ after_change │

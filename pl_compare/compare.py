@@ -14,7 +14,7 @@ class ComparisonMetadata:
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
     streaming: bool
-    equality_resolution: Union[float, None]
+    resolution: Union[float, None]
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]
     sample_limit: Union[int, None]
     base_alias: str
@@ -170,7 +170,7 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 def get_equality_check(
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
-    equality_resolution: Union[float, None],
+    resolution: Union[float, None],
     col: str,
     format: Union[pl.DataType, DataTypeClass],
 ) -> pl.Expr:
@@ -185,14 +185,14 @@ def get_equality_check(
         col: str, format: Union[pl.DataType, DataTypeClass]
     ) -> pl.Expr:
         return (
-            ((pl.col(f"{col}_base") - pl.col(f"{col}_compare")).abs() > equality_resolution)
+            ((pl.col(f"{col}_base") - pl.col(f"{col}_compare")).abs() > resolution)
             | (pl.col(f"{col}_base").is_null() & ~pl.col(f"{col}_compare").is_null())
             | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
         )
 
     if equality_check is not None:
         return equality_check(col, format)
-    if equality_resolution is not None and format in [
+    if resolution is not None and format in [
         pl.Float32,
         pl.Float64,
         pl.Decimal,
@@ -217,7 +217,7 @@ def get_combined_tables(
     compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
     how_join: Literal["inner", "outer"] = "inner",
-    equality_resolution: Union[float, None] = None,
+    resolution: Union[float, None] = None,
     validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
@@ -232,7 +232,7 @@ def get_combined_tables(
     )
     return compare_df.with_columns(
         [
-            get_equality_check(equality_check, equality_resolution, col, format).alias(
+            get_equality_check(equality_check, resolution, col, format).alias(
                 f"{col}_has_diff"
             )
             for col, format in compare_columns.items()
@@ -309,7 +309,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         meta.compare_df,
         compare_columns,
         meta.equality_check,
-        equality_resolution=meta.equality_resolution,
+        resolution=meta.resolution,
         how_join=how_join,
         validate=meta.validate,
     )
@@ -369,7 +369,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
             base_df=base_df_schema,
             compare_df=compare_df_schema,
             streaming=True,
-            equality_resolution=None,
+            resolution=None,
             equality_check=None,
             sample_limit=None,
             base_alias=f"{meta.base_alias}_format",
@@ -443,7 +443,7 @@ class compare:
         base_df: Union[pl.LazyFrame, pl.DataFrame],
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
-        equality_resolution: Union[float, None] = None,
+        resolution: Union[float, None] = None,
         equality_check: Union[
             Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None
         ] = None,
@@ -461,7 +461,7 @@ class compare:
             base_df (Union[pl.LazyFrame, pl.DataFrame]): The base dataframe for comparison.
             compare_df (Union[pl.LazyFrame, pl.DataFrame]): The dataframe that will be compared with the base dataframe.
             streaming (bool): Whether the comparison will return LazyFrames (defaults to False).
-            equality_resolution (Union[float, None]): The equality_resolution for comparison. Applies to numeric values only. If the difference between two values is greater than the equality_resolution then the values are considered to be unequal.
+            resolution (Union[float, None]): The resolution for comparison. Applies to numeric values only. If the difference between two values is greater than the resolution then the values are considered to be unequal.
             equality_check (Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]): The function to check equality.
             sample_limit (int): The number of rows to sample from the comparison. This only applies to methods that return a sample.
             base_alias (str): The alias for the base dataframe. This will be displayed in the final result.
@@ -483,7 +483,7 @@ class compare:
             base_lazy_df,
             compare_lazy_df,
             streaming,
-            equality_resolution,
+            resolution,
             equality_check,
             sample_limit,
             base_alias,
@@ -515,7 +515,7 @@ class compare:
             )
         return self._created_frames[func.__name__]
 
-    def schema_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def schema_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of schema differences between the two dataframes.
 
@@ -524,7 +524,7 @@ class compare:
         """
         return self._get_or_create(summarise_column_differences, self._comparison_metadata)
 
-    def row_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def row_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of row differences between the two dataframes.
 
@@ -533,7 +533,7 @@ class compare:
         """
         return self._get_or_create(get_row_comparison_summary, self._comparison_metadata)
 
-    def row_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def row_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a sample of row differences between the two dataframes.
 
@@ -542,7 +542,7 @@ class compare:
         """
         return self._get_or_create(get_row_differences, self._comparison_metadata)
 
-    def value_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def value_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of value differences between the two dataframes.
 
@@ -553,7 +553,7 @@ class compare:
             "Value Differences for Column", pl.col("Count").cast(pl.Int64).alias("Count")
         )
 
-    def schema_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def schema_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a sample of schema differences between the two dataframes.
 
@@ -562,7 +562,7 @@ class compare:
         """
         return self._get_or_create(get_schema_comparison, self._comparison_metadata)
 
-    def value_differences_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def value_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a sample of value differences between the two dataframes.
 
@@ -593,7 +593,7 @@ class compare:
         Returns:
             bool: True if the schemas are unequal, False otherwise.
         """
-        return convert_to_dataframe(self.schema_differences_sample()).height != 0
+        return convert_to_dataframe(self.schema_sample()).height != 0
 
     def is_rows_unequal(self) -> bool:
         """
@@ -602,7 +602,7 @@ class compare:
         Returns:
             bool: True if the rows are unequal, False otherwise.
         """
-        return convert_to_dataframe(self.row_differences_sample()).height != 0
+        return convert_to_dataframe(self.row_sample()).height != 0
 
     def is_values_unequal(self) -> bool:
         """
@@ -613,12 +613,12 @@ class compare:
         """
         return (
             convert_to_dataframe(
-                set_df_type(self.value_differences_sample(), streaming=False)
+                set_df_type(self.value_sample(), streaming=False)
             ).height
             != 0
         )
 
-    def all_differences_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def all_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of all differences between the two dataframes.
 
@@ -627,12 +627,12 @@ class compare:
         """
         return pl.concat(  # type: ignore
             [
-                self.schema_differences_summary(),
-                self.row_differences_summary(),
-                self.value_differences_summary()
+                self.schema_summary(),
+                self.row_summary(),
+                self.value_summary()
                 .rename({"Value Differences for Column": "Statistic"})
                 .filter(pl.col("Statistic") == pl.lit("Total Value Differences")),
-                self.value_differences_summary()
+                self.value_summary()
                 .rename({"Value Differences for Column": "Statistic"})
                 .filter(pl.col("Statistic") != pl.lit("Total Value Differences"))
                 .select(
@@ -663,21 +663,21 @@ class compare:
             return None
         if self.is_schema_unequal():
             combined.append(
-                f"\nSCHEMA DIFFERENCES:\n{self.schema_differences_summary()}\n{self.schema_differences_sample()}"
+                f"\nSCHEMA DIFFERENCES:\n{self.schema_summary()}\n{self.schema_sample()}"
             )
         else:
             combined.append("No Schema differences found.")
         combined.append(80 * "-")
         if self.is_rows_unequal():
             combined.append(
-                f"\nROW DIFFERENCES:\n{self.row_differences_summary()}\n{self.row_differences_sample()}"
+                f"\nROW DIFFERENCES:\n{self.row_summary()}\n{self.row_sample()}"
             )
         else:
             combined.append("No Row differences found (when joining by the supplied id_columns).")
         combined.append(80 * "-")
         if self.is_values_unequal():
             combined.append(
-                f"\nVALUE DIFFERENCES:\n{self.value_differences_summary()}\n{self.value_differences_sample()}"
+                f"\nVALUE DIFFERENCES:\n{self.value_summary()}\n{self.value_sample()}"
             )
         else:
             combined.append("No Column Value differences found.")
