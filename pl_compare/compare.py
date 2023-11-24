@@ -239,19 +239,41 @@ def get_combined_tables(
 
 
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
+    value_differences = get_column_value_differences(meta)
     final_df = (
-        get_column_value_differences(meta)
-        .group_by(["variable"])
+        value_differences.group_by(["variable"])
         .agg(pl.sum("has_diff"))
         .sort("variable", descending=False)
-        .rename({"variable": "Value Differences for Column", "has_diff": "Count"})
+        .rename({"variable": "Value Differences", "has_diff": "Count"})
+    )
+    total_value_comparisons = value_differences.select(
+        pl.lit("Total Value Comparisons").alias("Value Differences"),
+        pl.count().alias("Count"),
+        pl.lit(100.0).alias("Percentage"),
+    )
+    value_comparisons = (
+        total_value_comparisons.filter(
+            pl.col("Value Differences") == "Total Value Comparisons"
+        )
+        .select("Count")
+        .collect(streaming=True)
+        .item()
     )
     total_differences = final_df.select(
-        pl.lit("Total Value Differences").alias("Value Differences for Column"),
+        pl.lit("Total Value Differences").alias("Value Differences"),
         pl.sum("Count").alias("Count"),
+        (pl.sum("Count") / pl.lit(0.01 * value_comparisons)).alias("Percentage"),
+    )
+    columns_compared = final_df.select(pl.count().alias("Count")).collect(streaming=True).item()
+    value_comparisons_per_column = value_comparisons / columns_compared
+    final_df_with_percentages = final_df.with_columns(
+        (pl.col("Count") / pl.lit(0.01 * value_comparisons_per_column)).alias("Percentage")
     )
     final_df2 = pl.concat(
-        [total_differences.collect(streaming=True), final_df.collect(streaming=True)]
+        [
+            total_differences.collect(streaming=True),
+            final_df_with_percentages.collect(streaming=True),
+        ]
     )
     if meta.hide_empty_stats:
         final_df2 = final_df2.filter(pl.col("Count") > 0)
@@ -330,7 +352,6 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         )
         .unnest("value")
     )
-
     return melted_df
 
 
@@ -548,7 +569,7 @@ class compare:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of value differences.
         """
         return self._get_or_create(summarise_value_difference, self._comparison_metadata).select(
-            "Value Differences for Column", pl.col("Count").cast(pl.Int64).alias("Count")
+            "Value Differences", pl.col("Count").cast(pl.Int64).alias("Count"), "Percentage"
         )
 
     def schema_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
@@ -623,10 +644,11 @@ class compare:
                 self.schema_summary(),
                 self.row_summary(),
                 self.value_summary()
-                .rename({"Value Differences for Column": "Statistic"})
+                .select("Value Differences", "Count")
+                .rename({"Value Differences": "Statistic"})
                 .filter(pl.col("Statistic") == pl.lit("Total Value Differences")),
                 self.value_summary()
-                .rename({"Value Differences for Column": "Statistic"})
+                .rename({"Value Differences": "Statistic"})
                 .filter(pl.col("Statistic") != pl.lit("Total Value Differences"))
                 .select(
                     pl.concat_str(pl.lit("Value diffs Col:"), pl.col("Statistic")).alias(

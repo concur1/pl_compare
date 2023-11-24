@@ -130,9 +130,11 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
 def test_expected_values_returned_value_summary(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_summary = pl.DataFrame(
-        {"Value Differences for Column": ["Total Value Differences", "Example1"], "Count": [1, 1]},
-        schema={"Value Differences for Column": pl.Utf8, "Count": pl.Int64},
+        {"Value Differences": ["Total Value Differences", "Example1"], "Count": [1, 1], "Percentage": [50.0, 50.0]},
+        schema={"Value Differences": pl.Utf8, "Count": pl.Int64, "Percentage": pl.Float64},
     )
+    print(compare_result.value_summary())
+    print(expected_value_summary)
     assert_frame_equal(compare_result.value_summary(), expected_value_summary)
 
 
@@ -180,7 +182,8 @@ def test_expected_values_returned_all_summary():
                 "Value diffs Col:Example2",
             ],
             "Count": [3, 3, 3, 0, 0, 0, 3, 3, 1, 1, 2, 2, 1, 1],
-        }
+        },
+        schema={"Statistic": pl.Utf8, "Count": pl.Int64},
     )
     print(compare_result.all_summary())
     print(expected_value_differences)
