@@ -647,6 +647,7 @@ End of Report
 - [x] Add total number of value differences to the value differences summary.
 - [x] Add percentage column so the value differences summary.
 - [x] Change id_columns to be named 'join_columns' 
+- [x] Github actions for publishing
 - [] add a test that checks that abritrary join conditions work.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Simplify custom equality checks and add example.
@@ -655,5 +656,4 @@ End of Report
 - [] Github actions for testing
 - [] Github actions for linting
 - [] Investigate use for very large datasets 50GB-100GB. Can this be done using LazyFrames only?
-- [x] Github actions for publishing
 
