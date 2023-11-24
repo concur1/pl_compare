@@ -651,22 +651,22 @@ class compare:
         combined.append(80 * "-")
         combined.append("COMPARISON REPORT")
         combined.append(80 * "-")
-        if not self.is_unequal():
+        if self.is_equal():
             combined.append("Tables are exactly equal.")
             return None
-        if self.is_schema_unequal():
+        if not self.is_schema_equal():
             combined.append(
                 f"\nSCHEMA DIFFERENCES:\n{self.schema_summary()}\n{self.schema_sample()}"
             )
         else:
             combined.append("No Schema differences found.")
         combined.append(80 * "-")
-        if self.is_rows_unequal():
+        if not self.is_rows_equal():
             combined.append(f"\nROW DIFFERENCES:\n{self.row_summary()}\n{self.row_sample()}")
         else:
             combined.append("No Row differences found (when joining by the supplied id_columns).")
         combined.append(80 * "-")
-        if self.is_values_unequal():
+        if not self.is_values_equal():
             combined.append(f"\nVALUE DIFFERENCES:\n{self.value_summary()}\n{self.value_sample()}")
         else:
             combined.append("No Column Value differences found.")
