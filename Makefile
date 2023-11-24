@@ -13,8 +13,8 @@ check:
 	-ruff $(SRCPATH)
 	-black --check $(SRCPATH)
 	-mypy --strict pl_compare/compare.py
-	-pytest $(SRCPATH)
+	-pytest --doctest-glob="README.md" -v
 
 .PHONY: test
 test:
-	pytest .
+	-pytest -v --doctest-glob="README.md"
