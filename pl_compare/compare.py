@@ -359,7 +359,7 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFr
     if meta.sample_limit is not None:
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
-            .with_columns(pl.col("ones").cumsum().over("variable").alias("row_sample_number"))
+            .with_columns(pl.col("ones").cum_sum().over("variable").alias("row_sample_number"))
             .filter(pl.col("row_sample_number") <= pl.lit(meta.sample_limit))
             .drop("ones", "row_sample_number")
         )
