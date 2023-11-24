@@ -10,7 +10,7 @@ from dataclasses import dataclass
 class ComparisonMetadata:
     """Class for holding the (meta)data used to generate the comparison dataframes."""
 
-    id_columns: List[str]
+    join_columns: List[str]
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
     streaming: bool
@@ -25,11 +25,11 @@ class ComparisonMetadata:
 
 
 def get_duplicates(
-    df: Union[pl.LazyFrame, pl.DataFrame], id_columns: List[str]
+    df: Union[pl.LazyFrame, pl.DataFrame], join_columns: List[str]
 ) -> Union[pl.LazyFrame, pl.DataFrame]:
     ctx = pl.SQLContext(input_table=df)
-    query = f"""SELECT {', '.join(id_columns)}, count(*) AS row_count 
-                FROM input_table GROUP BY {", ".join(id_columns)} 
+    query = f"""SELECT {', '.join(join_columns)}, count(*) AS row_count 
+                FROM input_table GROUP BY {", ".join(join_columns)} 
                 HAVING row_count>1"""
     return ctx.execute(query)
 
@@ -79,14 +79,14 @@ def get_uncertain_row_count(df: pl.LazyFrame) -> int:
 
 
 def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
-    combined_table = meta.base_df.select(meta.id_columns + [pl.lit(True).alias("in_base")]).join(
-        meta.compare_df.select(meta.id_columns + [pl.lit(True).alias("in_compare")]),
-        on=meta.id_columns,
+    combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias("in_base")]).join(
+        meta.compare_df.select(meta.join_columns + [pl.lit(True).alias("in_compare")]),
+        on=meta.join_columns,
         how="outer",
         validate=meta.validate,
     )
     grouped_rows = (
-        combined_table.select(meta.id_columns + ["in_base", "in_compare"])
+        combined_table.select(meta.join_columns + ["in_base", "in_compare"])
         .group_by(["in_base", "in_compare"])
         .agg(pl.count())
     )
@@ -119,39 +119,39 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
 
 
 def get_base_only_rows(
-    id_columns: List[str],
+    join_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
 ) -> pl.LazyFrame:
-    combined_table = base_df.select(id_columns).join(
-        compare_df.select(id_columns),
-        on=id_columns,
+    combined_table = base_df.select(join_columns).join(
+        compare_df.select(join_columns),
+        on=join_columns,
         how="anti",
     )
-    return combined_table.select(id_columns + [pl.lit("in base only").alias("status")]).melt(
-        id_vars=id_columns, value_vars=["status"]
+    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).melt(
+        id_vars=join_columns, value_vars=["status"]
     )
 
 
 def get_compare_only_rows(
-    id_columns: List[str],
+    join_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
 ) -> pl.LazyFrame:
-    combined_table = compare_df.select(id_columns).join(
-        base_df.select(id_columns), on=id_columns, how="anti"
+    combined_table = compare_df.select(join_columns).join(
+        base_df.select(join_columns), on=join_columns, how="anti"
     )
-    return combined_table.select(id_columns + [pl.lit("in compare only").alias("status")]).melt(
-        id_vars=id_columns, value_vars=["status"]
+    return combined_table.select(join_columns + [pl.lit("in compare only").alias("status")]).melt(
+        id_vars=join_columns, value_vars=["status"]
     )
 
 
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_only_rows = get_base_only_rows(
-        meta.id_columns, meta.base_df, meta.compare_df
+        meta.join_columns, meta.base_df, meta.compare_df
     ).with_row_count()
     compare_only_rows = get_compare_only_rows(
-        meta.id_columns, meta.base_df, meta.compare_df
+        meta.join_columns, meta.base_df, meta.compare_df
     ).with_row_count()
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
@@ -211,7 +211,7 @@ def get_equality_check(
 
 
 def get_combined_tables(
-    id_columns: List[str],
+    join_columns: List[str],
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
     compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
@@ -226,7 +226,7 @@ def get_combined_tables(
     )
     compare_df = base_df.with_columns([pl.lit(True).alias("in_base")]).join(
         compare_df.with_columns([pl.lit(True).alias("in_compare")]),
-        on=id_columns,
+        on=join_columns,
         how=how_join,
         validate=validate,
     )
@@ -252,9 +252,7 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
         pl.lit(100.0).alias("Percentage"),
     )
     value_comparisons = (
-        total_value_comparisons.filter(
-            pl.col("Value Differences") == "Total Value Comparisons"
-        )
+        total_value_comparisons.filter(pl.col("Value Differences") == "Total Value Comparisons")
         .select("Count")
         .collect(streaming=True)
         .item()
@@ -281,11 +279,11 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
 
 
 def column_value_differences(
-    id_columns: List[str], compare_column: str, combined_tables: pl.LazyFrame
+    join_columns: List[str], compare_column: str, combined_tables: pl.LazyFrame
 ) -> pl.LazyFrame:
     final = combined_tables.filter(f"{compare_column}_has_diff").select(
         [pl.lit(compare_column).alias("Compare Column")]
-        + id_columns
+        + join_columns
         + [
             pl.col(f"{compare_column}_base").cast(pl.Utf8).alias("base"),
             pl.col(f"{compare_column}_compare").cast(pl.Utf8).alias("compare"),
@@ -312,7 +310,7 @@ def get_columns_to_compare(
     return {
         col: format
         for col, format in meta.base_df.schema.items()
-        if col not in meta.id_columns
+        if col not in meta.join_columns
         and col not in columns_to_exclude
         and col in meta.compare_df.columns
     }
@@ -324,7 +322,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         how_join = "outer"
     compare_columns = get_columns_to_compare(meta)
     combined_tables = get_combined_tables(
-        meta.id_columns,
+        meta.join_columns,
         meta.base_df,
         meta.compare_df,
         compare_columns,
@@ -347,7 +345,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
             ]
         )
         .melt(
-            id_vars=meta.id_columns,
+            id_vars=meta.join_columns,
             value_vars=[col for col, format in compare_columns.items()],
         )
         .unnest("value")
@@ -384,7 +382,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
 
     return get_column_value_differences_filtered(
         ComparisonMetadata(
-            id_columns=["column"],
+            join_columns=["column"],
             base_df=base_df_schema,
             compare_df=compare_df_schema,
             streaming=True,
@@ -458,7 +456,7 @@ class compare:
 
     def __init__(
         self,
-        id_columns: Union[List[str], None],
+        join_columns: Union[List[str], None],
         base_df: Union[pl.LazyFrame, pl.DataFrame],
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
         streaming: bool = False,
@@ -476,7 +474,7 @@ class compare:
         Initialize a new instance of the compare class.
 
         Parameters:
-            id_columns (Union[List[str], None]): Columns to be joined on for the comparison. If "None" is supplied then the row number for each dataframe will be used instead.
+            join_columns (Union[List[str], None]): Columns to be joined on for the comparison. If "None" is supplied then the row number for each dataframe will be used instead.
             base_df (Union[pl.LazyFrame, pl.DataFrame]): The base dataframe for comparison.
             compare_df (Union[pl.LazyFrame, pl.DataFrame]): The dataframe that will be compared with the base dataframe.
             streaming (bool): Whether the comparison will return LazyFrames (defaults to False).
@@ -490,15 +488,15 @@ class compare:
         """
         base_lazy_df = convert_to_lazyframe(base_df)
         compare_lazy_df = convert_to_lazyframe(compare_df)
-        if id_columns is None or id_columns == []:
+        if join_columns is None or join_columns == []:
             base_lazy_df = base_lazy_df.with_row_count(offset=1).rename({"row_nr": "row_number"})
             compare_lazy_df = compare_lazy_df.with_row_count(offset=1).rename(
                 {"row_nr": "row_number"}
             )
-            id_columns = ["row_number"]
+            join_columns = ["row_number"]
 
         self._comparison_metadata = ComparisonMetadata(
-            id_columns,
+            join_columns,
             base_lazy_df,
             compare_lazy_df,
             streaming,
@@ -686,7 +684,7 @@ class compare:
         if not self.is_rows_equal():
             combined.append(f"\nROW DIFFERENCES:\n{self.row_summary()}\n{self.row_sample()}")
         else:
-            combined.append("No Row differences found (when joining by the supplied id_columns).")
+            combined.append("No Row differences found (when joining by the supplied join_columns).")
         combined.append(80 * "-")
         if not self.is_values_equal():
             combined.append(f"\nVALUE DIFFERENCES:\n{self.value_summary()}\n{self.value_sample()}")

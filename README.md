@@ -646,7 +646,8 @@ End of Report
 - [x] Raise error and print examples if duplicates are present.
 - [x] Add total number of value differences to the value differences summary.
 - [x] Add percentage column so the value differences summary.
-- [] Change id_columns to be named 'join_columns' and add a test that checks that abritrary join conditions work.
+- [x] Change id_columns to be named 'join_columns' 
+- [] add a test that checks that abritrary join conditions work.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] Simplify custom equality checks and add example.
 - [] Test for large amounts of data

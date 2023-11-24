@@ -130,7 +130,11 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
 def test_expected_values_returned_value_summary(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_summary = pl.DataFrame(
-        {"Value Differences": ["Total Value Differences", "Example1"], "Count": [1, 1], "Percentage": [50.0, 50.0]},
+        {
+            "Value Differences": ["Total Value Differences", "Example1"],
+            "Count": [1, 1],
+            "Percentage": [50.0, 50.0],
+        },
         schema={"Value Differences": pl.Utf8, "Count": pl.Int64, "Percentage": pl.Float64},
     )
     print(compare_result.value_summary())
