@@ -232,9 +232,7 @@ def get_combined_tables(
     )
     return compare_df.with_columns(
         [
-            get_equality_check(equality_check, resolution, col, format).alias(
-                f"{col}_has_diff"
-            )
+            get_equality_check(equality_check, resolution, col, format).alias(f"{col}_has_diff")
             for col, format in compare_columns.items()
         ]
     )
@@ -571,52 +569,47 @@ class compare:
         """
         return self._get_or_create(get_column_value_differences_filtered, self._comparison_metadata)
 
-    def is_unequal(self) -> bool:
+    def is_equal(self) -> bool:
         """
         Check if the two dataframes are unequal based on schema, rows, and values.
 
         Returns:
             bool: True if the dataframes are unequal, False otherwise.
         """
-        if self.is_schema_unequal():
-            return True
-        if self.is_rows_unequal():
-            return True
-        if self.is_values_unequal():
-            return True
-        return False
+        if not self.is_schema_equal():
+            return False
+        if not self.is_rows_equal():
+            return False
+        if not self.is_values_equal():
+            return False
+        return True
 
-    def is_schema_unequal(self) -> bool:
+    def is_schema_equal(self) -> bool:
         """
         Check if the schemas of the two dataframes are unequal.
 
         Returns:
             bool: True if the schemas are unequal, False otherwise.
         """
-        return convert_to_dataframe(self.schema_sample()).height != 0
+        return convert_to_dataframe(self.schema_sample()).height == 0
 
-    def is_rows_unequal(self) -> bool:
+    def is_rows_equal(self) -> bool:
         """
         Check if the rows of the two dataframes are unequal.
 
         Returns:
             bool: True if the rows are unequal, False otherwise.
         """
-        return convert_to_dataframe(self.row_sample()).height != 0
+        return convert_to_dataframe(self.row_sample()).height == 0
 
-    def is_values_unequal(self) -> bool:
+    def is_values_equal(self) -> bool:
         """
         Check if the values of the two dataframes are unequal.
 
         Returns:
             bool: True if the values are unequal, False otherwise.
         """
-        return (
-            convert_to_dataframe(
-                set_df_type(self.value_sample(), streaming=False)
-            ).height
-            != 0
-        )
+        return convert_to_dataframe(set_df_type(self.value_sample(), streaming=False)).height == 0
 
     def all_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -669,16 +662,12 @@ class compare:
             combined.append("No Schema differences found.")
         combined.append(80 * "-")
         if self.is_rows_unequal():
-            combined.append(
-                f"\nROW DIFFERENCES:\n{self.row_summary()}\n{self.row_sample()}"
-            )
+            combined.append(f"\nROW DIFFERENCES:\n{self.row_summary()}\n{self.row_sample()}")
         else:
             combined.append("No Row differences found (when joining by the supplied id_columns).")
         combined.append(80 * "-")
         if self.is_values_unequal():
-            combined.append(
-                f"\nVALUE DIFFERENCES:\n{self.value_summary()}\n{self.value_sample()}"
-            )
+            combined.append(f"\nVALUE DIFFERENCES:\n{self.value_summary()}\n{self.value_sample()}")
         else:
             combined.append("No Column Value differences found.")
         combined.append(80 * "-")

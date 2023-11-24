@@ -29,42 +29,42 @@ def compare_df():
 
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
     compare_result = compare(None, base_df, base_df)
-    assert compare_result.is_schema_unequal() is False
-    assert compare_result.is_rows_unequal() is False
-    assert compare_result.is_values_unequal() is False
-    assert compare_result.is_unequal() is False
+    assert compare_result.is_schema_equal() is True
+    assert compare_result.is_rows_equal() is True
+    assert compare_result.is_values_equal() is True
+    assert compare_result.is_equal() is True
 
 
 def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
     compare_result = compare([], base_df, base_df)
-    assert compare_result.is_schema_unequal() is False
-    assert compare_result.is_rows_unequal() is False
-    assert compare_result.is_values_unequal() is False
-    assert compare_result.is_unequal() is False
+    assert compare_result.is_schema_equal() is True
+    assert compare_result.is_rows_equal() is True
+    assert compare_result.is_values_equal() is True
+    assert compare_result.is_equal() is True
 
 
-def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
+def test_expected_values_returned_for_bools_for_equal_dfs(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
-    assert compare_result.is_schema_unequal() is True
-    assert compare_result.is_rows_unequal() is True
-    assert compare_result.is_values_unequal() is True
-    assert compare_result.is_unequal() is True
+    assert compare_result.is_schema_equal() is False
+    assert compare_result.is_rows_equal() is False
+    assert compare_result.is_values_equal() is False
+    assert compare_result.is_equal() is False
 
 
 def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
     compare_result = compare([], base_df, base_df)
-    assert compare_result.is_schema_unequal() is False
-    assert compare_result.is_rows_unequal() is False
-    assert compare_result.is_values_unequal() is False
-    assert compare_result.is_unequal() is False
+    assert compare_result.is_schema_equal() is True
+    assert compare_result.is_rows_equal() is True
+    assert compare_result.is_values_equal() is True
+    assert compare_result.is_equal() is True
 
 
 def test_expected_values_returned_for_bools_for_equal_dfs(base_df):
     compare_result = compare(["ID"], base_df, base_df)
-    assert compare_result.is_schema_unequal() is False
-    assert compare_result.is_rows_unequal() is False
-    assert compare_result.is_values_unequal() is False
-    assert compare_result.is_unequal() is False
+    assert compare_result.is_schema_equal() is True
+    assert compare_result.is_rows_equal() is True
+    assert compare_result.is_values_equal() is True
+    assert compare_result.is_equal() is True
 
 
 def test_expected_values_returned_for_schema_summary(base_df, compare_df):
@@ -237,10 +237,7 @@ def test_sample_limit():
         == 1
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=1)
-        .row_sample()
-        .select(pl.count())
-        .item()
+        compare(["ID"], base_df, compare_df, sample_limit=1).row_sample().select(pl.count()).item()
         == 2
     )
     assert (
@@ -251,10 +248,7 @@ def test_sample_limit():
         == 2
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=2)
-        .row_sample()
-        .select(pl.count())
-        .item()
+        compare(["ID"], base_df, compare_df, sample_limit=2).row_sample().select(pl.count()).item()
         == 4
     )
     assert (
@@ -354,5 +348,3 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     # compare(["ID", "ID"], base_df, compare_df, 'm:1').row_summary()
     # compare(["ID", "ID"], compare_df, base_df, '1:m').value_summary()
     # compare(["ID", "ID"], compare_df, base_df, '1:m').row_summary()
-
-
