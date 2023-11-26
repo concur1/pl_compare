@@ -16,7 +16,7 @@
 pip install pl_compare
 ```
 
-### Examples
+### Examples (click example titles to expand)
 
 <details>
 <summary>Return booleans to check for schema, row and value differences</summary>
