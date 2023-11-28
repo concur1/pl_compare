@@ -553,30 +553,6 @@ shape: (1, 4)
 ...         }
 ...     )
 ...     comparison = compare(["ID"], base_df, compare_df)
-...     if comparison.is_equal():
-...         raise Exception(comparison.report())
-...
->>> test_example()
->>> import polars as pl
->>> import pytest
->>> from pl_compare.compare import compare
->>>
->>> def test_example():
-...     base_df = pl.DataFrame(
-...         {
-...             "ID": ["123456", "1234567", "12345678"],
-...             "Example1": [1, 6, 3],
-...             "Example2": [1, 2, 3],
-...         }
-...     )
-...     compare_df = pl.DataFrame(
-...         {
-...             "ID": ["123456", "1234567", "12345678"],
-...             "Example1": [1, 6, 9],
-...             "Example2": [1, 2, 3],
-...         }
-...     )
-...     comparison = compare(["ID"], base_df, compare_df)
 ...     if not comparison.is_equal():
 ...         raise Exception(comparison.report())
 ...
