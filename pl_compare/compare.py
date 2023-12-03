@@ -595,7 +595,7 @@ class compare:
         Returns:
             bool: True if the dataframes are unequal, False otherwise.
         """
-        if not self.is_schema_equal():
+        if not self.is_schemas_equal():
             return False
         if not self.is_rows_equal():
             return False
@@ -603,7 +603,7 @@ class compare:
             return False
         return True
 
-    def is_schema_equal(self) -> bool:
+    def is_schemas_equal(self) -> bool:
         """
         Check if the schemas of the two dataframes are unequal.
 
@@ -674,7 +674,7 @@ class compare:
         if self.is_equal():
             combined.append("Tables are exactly equal.")
             return None
-        if not self.is_schema_equal():
+        if not self.is_schemas_equal():
             combined.append(
                 f"\nSCHEMA DIFFERENCES:\n{self.schema_summary()}\n{self.schema_sample()}"
             )

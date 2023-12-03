@@ -45,8 +45,8 @@ pip install pl_compare
 ... )
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
->>> print("is_schema_equal:", compare_result.is_schema_equal())
-is_schema_equal: False
+>>> print("is_schemas_equal:", compare_result.is_schemas_equal())
+is_schemas_equal: False
 >>> print("is_rows_equal:", compare_result.is_rows_equal())
 is_rows_equal: False
 >>> print("is_values_equal:", compare_result.is_values_equal())
