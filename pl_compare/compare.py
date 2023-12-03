@@ -590,7 +590,7 @@ class compare:
 
     def is_equal(self) -> bool:
         """
-        Check if the two dataframes are unequal based on schema, rows, and values.
+        k if the two dataframes are unequal based on schema, rows, and values.
 
         Returns:
             bool: True if the dataframes are unequal, False otherwise.
@@ -630,7 +630,7 @@ class compare:
         """
         return convert_to_dataframe(set_df_type(self.value_sample(), streaming=False)).height == 0
 
-    def all_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of all differences between the two dataframes.
 
@@ -661,7 +661,7 @@ class compare:
         """
         Generate a report of the comparison results.
 
-        Parameters:
+        meters:
             print (Union[Callable[[str], None], None]): The function to print the report for example you could supply the standard 'print' or logger.info if you want the output to be logged instead of printed.
 
         Returns:

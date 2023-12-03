@@ -150,7 +150,7 @@ def test_expected_values_returned_value_differences(base_df, compare_df):
     assert_frame_equal(compare_result.value_sample(), expected_value_differences)
 
 
-def test_expected_values_returned_all_summary():
+def test_expected_values_returned_summary():
     base_df = pl.DataFrame(
         {
             "ID": ["123456", "1234567", "12345678"],
@@ -189,9 +189,9 @@ def test_expected_values_returned_all_summary():
         },
         schema={"Statistic": pl.Utf8, "Count": pl.Int64},
     )
-    print(compare_result.all_summary())
+    print(compare_result.summary())
     print(expected_value_differences)
-    assert_frame_equal(compare_result.all_summary(), expected_value_differences)
+    assert_frame_equal(compare_result.summary(), expected_value_differences)
 
 
 def test_streaming_input_without_streaming_flag_returns_non_lazy_dfs():
@@ -311,7 +311,7 @@ def test_hide_empty_stats():
             ],
         }
     )
-    assert_frame_equal(compare_result.all_summary(), expected_value_differences)
+    assert_frame_equal(compare_result.summary(), expected_value_differences)
 
 
 def test_error_raised_when_dupes_supplied_for_1_1_validation():
