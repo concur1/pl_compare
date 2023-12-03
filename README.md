@@ -55,7 +55,7 @@ is_values_equal: False
 </details>
 
 <details>
-<summary>:heavy_plus_sign:Schema differences summary and details:heavy_plus_sign:</summary>
+<summary>Schema differences summary and details:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -111,7 +111,7 @@ shape: (2, 3)
 </details>
 
 <details>
-<summary>:heavy_plus_sign:Row differences summary and details:heavy_plus_sign:</summary>
+<summary>Row differences summary and details:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -166,7 +166,7 @@ shape: (2, 3)
 </details>
 
 <details>
-<summary>:heavy_plus_sign:Value differences summary and details:heavy_plus_sign:</summary>
+<summary>Value differences summary and details:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -217,7 +217,7 @@ shape: (1, 4)
 </details>
 
 <details>
-<summary>:heavy_plus_sign:Full report:heavy_plus_sign:</summary>
+<summary>Full report:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -320,7 +320,7 @@ End of Report
 </details>
 
 <details>
-<summary>:heavy_plus_sign:Compare two pandas dataframes:heavy_plus_sign:</summary>
+<summary>Compare two pandas dataframes:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -425,7 +425,7 @@ End of Report
 
 
 <details>
-<summary>:heavy_plus_sign:Specify a threshold to control the granularity of the comparison for numeric columns.:heavy_plus_sign:</summary>
+<summary>Specify a threshold to control the granularity of the comparison for numeric columns.:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -476,7 +476,7 @@ shape: (2, 4)
 
 
 <details>
-<summary>:heavy_plus_sign:Example using alias for base and compare dataframes.:heavy_plus_sign:</summary>
+<summary>Example using alias for base and compare dataframes.:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -532,7 +532,7 @@ shape: (1, 4)
 </details>
 
 <details>
-<summary>:heavy_plus_sign:Assert two frames are equal for a test:heavy_plus_sign:</summary>
+<summary>Assert two frames are equal for a test:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
