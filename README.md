@@ -21,7 +21,7 @@ pip install pl_compare
 ### Examples (click example titles to expand)
 
 <details>
-<summary>:heavy_plus_sign:Return booleans to check for schema, row and value differences :heavy_plus_sign:</summary>
+<summary>:heavy_plus_sign: Return booleans to check for schema, row and value differences :heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
