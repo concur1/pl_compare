@@ -10,7 +10,7 @@
 - Use LazyFrames for larger than memory comparisons
 - Specify the equality calculation that is used to dermine value differences
 
-![demo](demo.gif)
+![](demo.gif)
 
 ### Installation
 
