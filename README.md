@@ -21,7 +21,7 @@ pip install pl_compare
 ### Examples (click example titles to expand)
 
 <details>
-<summary>Return booleans to check for schema, row and value differences :heavy_plus_sign:</summary>
+<summary>:heavy_plus_sign:Return booleans to check for schema, row and value differences :heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -55,7 +55,7 @@ is_values_equal: False
 </details>
 
 <details>
-<summary>Schema differences summary and details</summary>
+<summary>:heavy_plus_sign:Schema differences summary and details:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -111,7 +111,7 @@ shape: (2, 3)
 </details>
 
 <details>
-<summary>Row differences summary and details</summary>
+<summary>:heavy_plus_sign:Row differences summary and details:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -166,7 +166,7 @@ shape: (2, 3)
 </details>
 
 <details>
-<summary>Value differences summary and details</summary>
+<summary>:heavy_plus_sign:Value differences summary and details:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -217,7 +217,7 @@ shape: (1, 4)
 </details>
 
 <details>
-<summary>Full report</summary>
+<summary>:heavy_plus_sign:Full report:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -320,7 +320,7 @@ End of Report
 </details>
 
 <details>
-<summary>Compare two pandas dataframes</summary>
+<summary>:heavy_plus_sign:Compare two pandas dataframes:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -425,7 +425,7 @@ End of Report
 
 
 <details>
-<summary>Specify a threshold to control the granularity of the comparison for numeric columns.</summary>
+<summary>:heavy_plus_sign:Specify a threshold to control the granularity of the comparison for numeric columns.:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -476,7 +476,7 @@ shape: (2, 4)
 
 
 <details>
-<summary>Example using alias for base and compare dataframes.</summary>
+<summary>:heavy_plus_sign:Example using alias for base and compare dataframes.:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
@@ -532,7 +532,7 @@ shape: (1, 4)
 </details>
 
 <details>
-<summary>Assert two frames are equal for a test</summary>
+<summary>:heavy_plus_sign:Assert two frames are equal for a test:heavy_plus_sign:</summary>
 
 ```python
 >>> import polars as pl
