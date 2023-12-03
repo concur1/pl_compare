@@ -80,9 +80,9 @@ is_values_equal: False
 ... )
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
->>> print("schema_summary()")
-schema_summary()
->>> print(compare_result.schema_summary())
+>>> print("schemas_summary()")
+schemas_summary()
+>>> print(compare_result.schemas_summary())
 shape: (6, 2)
 ┌─────────────────────────────────┬───────┐
 │ Statistic                       ┆ Count │
@@ -96,9 +96,9 @@ shape: (6, 2)
 │ Columns only in compare         ┆ 1     │
 │ Columns with schema differences ┆ 1     │
 └─────────────────────────────────┴───────┘
->>> print("schema_sample()")
-schema_sample()
->>> print(compare_result.schema_sample())
+>>> print("schemas_sample()")
+schemas_sample()
+>>> print(compare_result.schemas_sample())
 shape: (2, 3)
 ┌──────────┬─────────────┬────────────────┐
 │ column   ┆ base_format ┆ compare_format │
@@ -137,9 +137,9 @@ shape: (2, 3)
 ... )
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
->>> print("row_summary()")
-row_summary()
->>> print(compare_result.row_summary())
+>>> print("rows_summary()")
+rows_summary()
+>>> print(compare_result.rows_summary())
 shape: (5, 2)
 ┌──────────────────────────┬───────┐
 │ Statistic                ┆ Count │
@@ -152,9 +152,9 @@ shape: (5, 2)
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
->>> print("row_sample()")
-row_sample()
->>> print(compare_result.row_sample())
+>>> print("rows_sample()")
+rows_sample()
+>>> print(compare_result.rows_sample())
 shape: (2, 3)
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
@@ -193,9 +193,9 @@ shape: (2, 3)
 ... )
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
->>> print("value_summary()")
-value_summary()
->>> print(compare_result.value_summary())
+>>> print("values_summary()")
+values_summary()
+>>> print(compare_result.values_summary())
 shape: (2, 3)
 ┌─────────────────────────┬───────┬────────────┐
 │ Value Differences       ┆ Count ┆ Percentage │
@@ -205,9 +205,9 @@ shape: (2, 3)
 │ Total Value Differences ┆ 1     ┆ 50.0       │
 │ Example1                ┆ 1     ┆ 50.0       │
 └─────────────────────────┴───────┴────────────┘
->>> print("value_sample()")
-value_sample()
->>> print(compare_result.value_sample())
+>>> print("values_sample()")
+values_sample()
+>>> print(compare_result.values_sample())
 shape: (1, 4)
 ┌─────────┬──────────┬──────┬─────────┐
 │ ID      ┆ variable ┆ base ┆ compare │
@@ -455,7 +455,7 @@ End of Report
 >>> print("With equality_resolution of 0.01")
 With equality_resolution of 0.01
 >>> compare_result = compare(["ID"], base_df, compare_df, resolution=0.01)
->>> print(compare_result.value_sample())
+>>> print(compare_result.values_sample())
 shape: (1, 4)
 ┌─────────┬──────────┬──────┬─────────┐
 │ ID      ┆ variable ┆ base ┆ compare │
@@ -467,7 +467,7 @@ shape: (1, 4)
 >>> print("With no equality_resolution")
 With no equality_resolution
 >>> compare_result = compare(["ID"], base_df, compare_df)
->>> print(compare_result.value_sample())
+>>> print(compare_result.values_sample())
 shape: (2, 4)
 ┌─────────┬──────────┬───────┬─────────┐
 │ ID      ┆ variable ┆ base  ┆ compare │
@@ -512,9 +512,9 @@ shape: (2, 4)
 ...                          base_alias="before_change",
 ...                          compare_alias="after_change")
 >>>
->>> print("value_summary()")
-value_summary()
->>> print(compare_result.schema_sample())
+>>> print("values_summary()")
+values_summary()
+>>> print(compare_result.schemas_sample())
 shape: (2, 3)
 ┌──────────┬──────────────────────┬─────────────────────┐
 │ column   ┆ before_change_format ┆ after_change_format │
@@ -524,9 +524,9 @@ shape: (2, 3)
 │ Example2 ┆ Utf8                 ┆ Int64               │
 │ Example3 ┆ null                 ┆ Int64               │
 └──────────┴──────────────────────┴─────────────────────┘
->>> print("value_sample()")
-value_sample()
->>> print(compare_result.value_sample())
+>>> print("values_sample()")
+values_sample()
+>>> print(compare_result.values_sample())
 shape: (1, 4)
 ┌─────────┬──────────┬───────────────┬──────────────┐
 │ ID      ┆ variable ┆ before_change ┆ after_change │

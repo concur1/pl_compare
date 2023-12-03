@@ -359,9 +359,9 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFr
     if meta.sample_limit is not None:
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
-            .with_columns(pl.col("ones").cum_sum().over("variable").alias("row_sample_number"))
-            .filter(pl.col("row_sample_number") <= pl.lit(meta.sample_limit))
-            .drop("ones", "row_sample_number")
+            .with_columns(pl.col("ones").cum_sum().over("variable").alias("rows_sample_number"))
+            .filter(pl.col("rows_sample_number") <= pl.lit(meta.sample_limit))
+            .drop("ones", "rows_sample_number")
         )
     return filtered_df
 
@@ -532,7 +532,7 @@ class compare:
             )
         return self._created_frames[func.__name__]
 
-    def schema_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def schemas_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of schema differences between the two dataframes.
 
@@ -541,7 +541,7 @@ class compare:
         """
         return self._get_or_create(summarise_column_differences, self._comparison_metadata)
 
-    def row_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def rows_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of row differences between the two dataframes.
 
@@ -550,7 +550,7 @@ class compare:
         """
         return self._get_or_create(get_row_comparison_summary, self._comparison_metadata)
 
-    def row_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def rows_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a sample of row differences between the two dataframes.
 
@@ -559,7 +559,7 @@ class compare:
         """
         return self._get_or_create(get_row_differences, self._comparison_metadata)
 
-    def value_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def values_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a summary of value differences between the two dataframes.
 
@@ -570,7 +570,7 @@ class compare:
             "Value Differences", pl.col("Count").cast(pl.Int64).alias("Count"), "Percentage"
         )
 
-    def schema_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def schemas_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a sample of schema differences between the two dataframes.
 
@@ -579,7 +579,7 @@ class compare:
         """
         return self._get_or_create(get_schema_comparison, self._comparison_metadata)
 
-    def value_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+    def values_sample(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
         Get a sample of value differences between the two dataframes.
 
@@ -610,7 +610,7 @@ class compare:
         Returns:
             bool: True if the schemas are unequal, False otherwise.
         """
-        return convert_to_dataframe(self.schema_sample()).height == 0
+        return convert_to_dataframe(self.schemas_sample()).height == 0
 
     def is_rows_equal(self) -> bool:
         """
@@ -619,7 +619,7 @@ class compare:
         Returns:
             bool: True if the rows are unequal, False otherwise.
         """
-        return convert_to_dataframe(self.row_sample()).height == 0
+        return convert_to_dataframe(self.rows_sample()).height == 0
 
     def is_values_equal(self) -> bool:
         """
@@ -628,7 +628,7 @@ class compare:
         Returns:
             bool: True if the values are unequal, False otherwise.
         """
-        return convert_to_dataframe(set_df_type(self.value_sample(), streaming=False)).height == 0
+        return convert_to_dataframe(set_df_type(self.values_sample(), streaming=False)).height == 0
 
     def summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -639,13 +639,13 @@ class compare:
         """
         return pl.concat(  # type: ignore
             [
-                self.schema_summary(),
-                self.row_summary(),
-                self.value_summary()
+                self.schemas_summary(),
+                self.rows_summary(),
+                self.values_summary()
                 .select("Value Differences", "Count")
                 .rename({"Value Differences": "Statistic"})
                 .filter(pl.col("Statistic") == pl.lit("Total Value Differences")),
-                self.value_summary()
+                self.values_summary()
                 .rename({"Value Differences": "Statistic"})
                 .filter(pl.col("Statistic") != pl.lit("Total Value Differences"))
                 .select(
@@ -676,18 +676,18 @@ class compare:
             return None
         if not self.is_schemas_equal():
             combined.append(
-                f"\nSCHEMA DIFFERENCES:\n{self.schema_summary()}\n{self.schema_sample()}"
+                f"\nSCHEMA DIFFERENCES:\n{self.schemas_summary()}\n{self.schemas_sample()}"
             )
         else:
             combined.append("No Schema differences found.")
         combined.append(80 * "-")
         if not self.is_rows_equal():
-            combined.append(f"\nROW DIFFERENCES:\n{self.row_summary()}\n{self.row_sample()}")
+            combined.append(f"\nROW DIFFERENCES:\n{self.rows_summary()}\n{self.rows_sample()}")
         else:
             combined.append("No Row differences found (when joining by the supplied join_columns).")
         combined.append(80 * "-")
         if not self.is_values_equal():
-            combined.append(f"\nVALUE DIFFERENCES:\n{self.value_summary()}\n{self.value_sample()}")
+            combined.append(f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}")
         else:
             combined.append("No Column Value differences found.")
         combined.append(80 * "-")
