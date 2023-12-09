@@ -21,7 +21,7 @@ pip install pl_compare
 ### Examples (click to expand)
 
 <details>
-<summary>Return booleans to check for schema, row and value differences :heavy_plus_sign:</summary>
+<summary>Return booleans to check for schema, row and value differences </summary>
 
 
 ```python
@@ -56,7 +56,7 @@ is_values_equal: False
 </details>
 
 <details>
-<summary>Schema differences summary and details :heavy_plus_sign:</summary>
+<summary>Schema differences summary and details </summary>
 
 
 ```python
@@ -113,7 +113,7 @@ shape: (2, 3)
 </details>
 
 <details>
-<summary>Row differences summary and details :heavy_plus_sign:</summary>
+<summary>Row differences summary and details </summary>
 
 
 ```python
@@ -169,7 +169,7 @@ shape: (2, 3)
 </details>
 
 <details>
-<summary>Value differences summary and details :heavy_plus_sign:</summary>
+<summary>Value differences summary and details </summary>
 
 
 ```python
@@ -221,7 +221,7 @@ shape: (1, 4)
 </details>
 
 <details>
-<summary>Full report :heavy_plus_sign:</summary>
+<summary>Full report </summary>
 
 
 ```python
@@ -325,7 +325,7 @@ End of Report
 </details>
 
 <details>
-<summary>Compare two pandas dataframes :heavy_plus_sign:</summary>
+<summary>Compare two pandas dataframes </summary>
 
 
 ```python
@@ -431,7 +431,7 @@ End of Report
 
 
 <details>
-<summary>Specify a threshold to control the granularity of the comparison for numeric columns. :heavy_plus_sign:</summary>
+<summary>Specify a threshold to control the granularity of the comparison for numeric columns. </summary>
 
 
 ```python
@@ -483,7 +483,7 @@ shape: (2, 4)
 
 
 <details>
-<summary>Example using alias for base and compare dataframes. :heavy_plus_sign:</summary>
+<summary>Example using alias for base and compare dataframes. </summary>
 
 
 ```python
@@ -540,7 +540,7 @@ shape: (1, 4)
 </details>
 
 <details>
-<summary>Assert two frames are equal for a test :heavy_plus_sign:</summary>
+<summary>Assert two frames are equal for a test </summary>
 
 
 ```python
