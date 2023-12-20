@@ -1,9 +1,14 @@
-## pl_compare: Compare and find the differences between two Polars DataFrames. 
+# pl_compare: Compare and find the differences between two Polars DataFrames. 
 
 [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
+You will find pl-compare useful if you find yourself writing various SQL/Dataframe operations to:
+- Understand how well two tables Reconcile 
+- Find the schema differences between two tables
+- Find counts or examples of rows that exist in one table but not another
+- Find counts or examples of value differences between two tables
+- Assert that two tables are exactly equal (such as for an automated test)
+- Assert that two tables have matching schemas, rows or column values 
 
 - Get statistical summaries and/or examples and/or a boolean to indicate:
   - Schema differences
@@ -17,15 +22,15 @@ between two tables then this tool can help you.
 
 ![](demo1.gif)
 
-### Installation
+## Installation
 
 ```zsh
 pip install pl_compare
 ```
 
-### Examples (click to expand)
+## Examples (click to expand)
 
-Return booleans to check for schema, row and value differences 
+### Return booleans to check for schema, row and value differences 
 
 
 ```python
@@ -59,7 +64,7 @@ is_values_equal: False
 ```
 
 
-Schema differences summary and details 
+### Schema differences summary and details 
 
 
 ```python
@@ -115,7 +120,7 @@ shape: (2, 3)
 ```
 
 
-Row differences summary and details 
+### Row differences summary and details 
 
 
 ```python
@@ -170,7 +175,7 @@ shape: (2, 3)
 ```
 
 
-Value differences summary and details 
+### Value differences summary and details 
 
 
 ```python
@@ -221,8 +226,7 @@ shape: (1, 4)
 ```
 
 
-Full report 
-
+### Full report 
 
 ```python
 >>> import polars as pl
@@ -324,7 +328,7 @@ End of Report
 ```
 
 
-Compare two pandas dataframes 
+### Compare two pandas dataframes 
 
 
 ```python
@@ -429,7 +433,7 @@ End of Report
 
 
 
-Specify a threshold to control the granularity of the comparison for numeric columns. 
+### Specify a threshold to control the granularity of the comparison for numeric columns. 
 
 
 ```python
@@ -480,7 +484,7 @@ shape: (2, 4)
 
 
 
-Example using alias for base and compare dataframes. 
+### Example using alias for base and compare dataframes. 
 
 
 ```python
