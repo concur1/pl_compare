@@ -10,6 +10,7 @@
 - Assert that two tables are exactly equal (such as for an automated test) [example](#Assert-two-frames-are-equal-for-a-test)
 - Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema-row-and-value-differences)
 
+![](demo1.gif)
 
 **With pl-compare you can**:
 - Get statistical summaries and/or examples and/or a boolean to indicate:
@@ -22,7 +23,6 @@
 - Use LazyFrames for larger than memory comparisons
 - Specify the equality calculation that is used to dermine value differences
 
-![](demo1.gif)
 
 ## Installation
 
