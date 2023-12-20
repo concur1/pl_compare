@@ -3,7 +3,7 @@
 [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
 You will find pl-compare useful if you find yourself writing various SQL/Dataframe operations to:
-- Understand how well two tables Reconcile [example](Full report)
+- Understand how well two tables Reconcile [example](### Full report)
 - Find the schema differences between two tables
 - Find counts or examples of rows that exist in one table but not another
 - Find counts or examples of value differences between two tables
