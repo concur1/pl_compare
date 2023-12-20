@@ -2,6 +2,9 @@
 
 [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
+If you find your self writing various SQL/Dataframe operations to try and understand the differences 
+between two tables then this tool can help you.
+
 - Get statistical summaries and/or examples and/or a boolean to indicate:
   - Schema differences
   - Row differences
@@ -19,6 +22,7 @@
 ```zsh
 pip install pl_compare
 ```
+
 
 ### Examples
 
@@ -58,6 +62,9 @@ is_values_equal: False
 Schema differences summary and details 
 
 
+.. you find your self writing various SQL/Dataframe operations to try and understand the differences between tw
+o tablesIf ??? is ythen this tool can help you.
+
 ```python
 >>> import polars as pl
 >>> from pl_compare import compare
@@ -75,7 +82,8 @@ Schema differences summary and details
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
-...     },
+
+
 ..
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
@@ -111,6 +119,9 @@ shape: (2, 3)
 ```
 
 Row differences summary and details 
+.. you find your self writing various SQL/Dataframe operations to try and understand the differences between two tables.         "Examp
+lIf ??? is your prothen this tool can help you.
+
 
 
 ```python
@@ -128,7 +139,8 @@ Row differences summary and details
 ...     {
 ...         "ID": ["123456", "1234567", "1234567810"],
 ...         "Example1": [1, 2, 3],
-...         "Example2": [1, 2, 3],
+
+
 ...         "Exampl
 ...     },
 ... )
@@ -162,6 +174,9 @@ shape: (2, 3)
 │ 1234567810 ┆ status   ┆ in compare only │
 └────────────┴──────────┴─────────────────┘
 >>>
+.. you find your self writing various SQL/Dataframe operations to try and understand the differences between t
+wo tables.     {If then this tool can help you.
+
 ```
 
 Value differences summary and details 
@@ -179,7 +194,8 @@ Value differences summary and details
 ...     }
 ... )
 >>> compare_df = pl.DataFrame(
-...     {
+
+
 ...       
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
@@ -263,6 +279,9 @@ shape: (2, 3)
 │ ---      ┆ ---         ┆ ---            │
 │ str      ┆ str         ┆ str            │
 ╞══════════╪═════════════╪════════════════╡
+└─ you find your self writing various SQL/Dataframe operations to try and understand the differences between two tables────If ??? is your
+ problem, pl_comparthen this tool can help you.
+
 │ Example2 ┆ Utf8        ┆ Int64          │
 │ Example3 ┆ null        ┆ Int64          │
 └──────────┴─────────────┴────────────────┘
@@ -280,7 +299,8 @@ shape: (5, 2)
 │ Rows only in base        ┆ 1     │
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
-└──────────────────────────┴───────┘
+
+
 shape:
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
@@ -366,6 +386,9 @@ shape: (2, 3)
 │ ---      ┆ ---         ┆ ---            │
 │ str      ┆ str         ┆ str            │
 ╞══════════╪═════════════╪════════════════╡
+└─ you find your self writing various SQL/Dataframe operations to try and understand the differences between two tables────If ??? is your
+ problem, pl_comparthen this tool can help you.
+
 │ Example2 ┆ Utf8        ┆ Int64          │
 │ Example3 ┆ null        ┆ Int64          │
 └──────────┴─────────────┴────────────────┘
@@ -383,7 +406,8 @@ shape: (5, 2)
 │ Rows only in base        ┆ 1     │
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
-└──────────────────────────┴───────┘
+
+
 shape:
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
@@ -416,6 +440,9 @@ shape: (1, 4)
 --------------------------------------------------------------------------------
 End of Report
 --------------------------------------------------------------------------------
+>> you find your self writing various SQL/Dataframe operations to try and understand the differences bet
+ween two tables>If then this tool can help you.
+
 >>>
 ```
 
@@ -433,7 +460,8 @@ Specify a threshold to control the granularity of the comparison for numeric col
 ...         "Example1": [1.111, 6.11, 3.11],
 ...     }
 ... )
->>>
+
+
 >>> compare_df 
 ...     {
 ...         "ID": ["123456", "1234567", "1234567810"],
@@ -473,6 +501,9 @@ shape: (2, 4)
 Example using alias for base and compare dataframes. 
 
 
+.. you find your self writing various SQL/Dataframe operations to try and understand the differences between tw
+o tablesIf ??? is ythen this tool can help you.
+
 ```python
 >>> import polars as pl
 >>> from pl_compare import compare
@@ -490,7 +521,8 @@ Example using alias for base and compare dataframes.
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
-...     },
+
+
 ..
 >>>
 >>> compare_result = compare(["ID"],
@@ -536,6 +568,9 @@ Assert two frames are equal for a test
 >>> def test_example():
 ...     base_df = pl.DataFrame(
 ...         {
+Tr you find your self writing various SQL/Dataframe operations to try and understand the differences between two tablesacebaIf ??? is y
+our problem, pl_comthen this tool can help you.
+
 ...             "ID": ["123456", "1234567", "12345678"],
 ...             "Example1": [1, 6, 3],
 ...             "Example2": [1, 2, 3],
@@ -553,7 +588,8 @@ Assert two frames are equal for a test
 ...         raise Exception(comparison.report())
 ...
 >>> test_example() # doctest: +IGNORE_EXCEPTION_DETAIL
-Traceback (most recent call last):
+
+
   File 
   File "<stdin>", line 18, in test_example
 Exception: --------------------------------------------------------------------------------
