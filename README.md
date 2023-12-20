@@ -1,5 +1,7 @@
 ## pl_compare: Compare and find the differences between two Polars DataFrames. 
 
+[Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
+
 - Get statistical summaries and/or examples and/or a boolean to indicate:
   - Schema differences
   - Row differences
@@ -20,8 +22,9 @@ pip install pl_compare
 
 ### Examples (click to expand)
 
+<details>
+<summary>Return booleans to check for schema, row and value differences </summary>
 
-Return booleans to check for schema, row and value differences
 
 ```python
 >>> import polars as pl
@@ -52,10 +55,11 @@ is_rows_equal: False
 is_values_equal: False
 >>>
 ```
+</details>
 
+<details>
+<summary>Schema differences summary and details </summary>
 
-
-Schema differences summary and details
 
 ```python
 >>> import polars as pl
@@ -108,10 +112,11 @@ shape: (2, 3)
 └──────────┴─────────────┴────────────────┘
 >>>
 ```
+</details>
 
+<details>
+<summary>Row differences summary and details </summary>
 
-
-Row differences summary and details
 
 ```python
 >>> import polars as pl
@@ -163,10 +168,11 @@ shape: (2, 3)
 └────────────┴──────────┴─────────────────┘
 >>>
 ```
+</details>
 
+<details>
+<summary>Value differences summary and details </summary>
 
-
-Value differences summary and details
 
 ```python
 >>> import polars as pl
@@ -214,10 +220,11 @@ shape: (1, 4)
 └─────────┴──────────┴──────┴─────────┘
 >>>
 ```
+</details>
 
+<details>
+<summary>Full report </summary>
 
-
-Full report
 
 ```python
 >>> import polars as pl
@@ -317,10 +324,11 @@ End of Report
 --------------------------------------------------------------------------------
 >>>
 ```
+</details>
 
+<details>
+<summary>Compare two pandas dataframes </summary>
 
-
-Compare two pandas dataframes
 
 ```python
 >>> import polars as pl
@@ -421,11 +429,12 @@ End of Report
 --------------------------------------------------------------------------------
 >>>
 ```
+</details>
 
 
+<details>
+<summary>Specify a threshold to control the granularity of the comparison for numeric columns. </summary>
 
-
-Specify a threshold to control the granularity of the comparison for numeric columns.
 
 ```python
 >>> import polars as pl
@@ -472,11 +481,12 @@ shape: (2, 4)
 └─────────┴──────────┴───────┴─────────┘
 >>>
 ```
+</details>
 
 
+<details>
+<summary>Example using alias for base and compare dataframes. </summary>
 
-
-Example using alias for base and compare dataframes.
 
 ```python
 >>> import polars as pl
@@ -529,10 +539,11 @@ shape: (1, 4)
 └─────────┴──────────┴───────────────┴──────────────┘
 >>>
 ```
+</details>
 
+<details>
+<summary>Assert two frames are equal for a test </summary>
 
-
-Assert two frames are equal for a test
 
 ```python
 >>> import polars as pl
@@ -594,7 +605,7 @@ End of Report
 --------------------------------------------------------------------------------
 >>>
 ```
-
+</details>
 
 
 ### To DO:
