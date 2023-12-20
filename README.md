@@ -1,6 +1,7 @@
 ## pl_compare: Compare and find the differences between two Polars DataFrames. 
 
 [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
+
 If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
 between two tables then this tool can help you.
 
@@ -22,7 +23,7 @@ between two tables then this tool can help you.
 pip install pl_compare
 ```
 
-### Examples
+### Examples (click to expand)
 
 Return booleans to check for schema, row and value differences 
 
@@ -57,10 +58,9 @@ is_values_equal: False
 >>>
 ```
 
+
 Schema differences summary and details 
 
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 
 ```python
 >>> import polars as pl
@@ -80,7 +80,7 @@ between two tables then this tool can help you.
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
 ...     },
-..
+... )
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
 >>> print("schemas_summary()")
@@ -114,8 +114,7 @@ shape: (2, 3)
 >>>
 ```
 
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
+
 Row differences summary and details 
 
 
@@ -135,7 +134,7 @@ Row differences summary and details
 ...         "ID": ["123456", "1234567", "1234567810"],
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
-...         "Exampl
+...         "Example3": [1, 2, 3],
 ...     },
 ... )
 >>>
@@ -167,10 +166,9 @@ shape: (2, 3)
 │ 12345678   ┆ status   ┆ in base only    │
 │ 1234567810 ┆ status   ┆ in compare only │
 └────────────┴──────────┴─────────────────┘
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 >>>
 ```
+
 
 Value differences summary and details 
 
@@ -188,7 +186,7 @@ Value differences summary and details
 ... )
 >>> compare_df = pl.DataFrame(
 ...     {
-...       
+...         "ID": ["123456", "1234567", "1234567810"],
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
@@ -221,6 +219,7 @@ shape: (1, 4)
 └─────────┴──────────┴──────┴─────────┘
 >>>
 ```
+
 
 Full report 
 
@@ -270,8 +269,6 @@ shape: (2, 3)
 │ column   ┆ base_format ┆ compare_format │
 │ ---      ┆ ---         ┆ ---            │
 │ str      ┆ str         ┆ str            │
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 ╞══════════╪═════════════╪════════════════╡
 │ Example2 ┆ Utf8        ┆ Int64          │
 │ Example3 ┆ null        ┆ Int64          │
@@ -291,7 +288,7 @@ shape: (5, 2)
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
-shape:
+shape: (2, 3)
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
 │ ---        ┆ ---      ┆ ---             │
@@ -325,6 +322,7 @@ End of Report
 --------------------------------------------------------------------------------
 >>>
 ```
+
 
 Compare two pandas dataframes 
 
@@ -375,8 +373,6 @@ shape: (2, 3)
 │ column   ┆ base_format ┆ compare_format │
 │ ---      ┆ ---         ┆ ---            │
 │ str      ┆ str         ┆ str            │
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 ╞══════════╪═════════════╪════════════════╡
 │ Example2 ┆ Utf8        ┆ Int64          │
 │ Example3 ┆ null        ┆ Int64          │
@@ -396,7 +392,7 @@ shape: (5, 2)
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
-shape:
+shape: (2, 3)
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
 │ ---        ┆ ---      ┆ ---             │
@@ -427,11 +423,10 @@ shape: (1, 4)
 └─────────┴──────────┴──────┴─────────┘
 --------------------------------------------------------------------------------
 End of Report
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 --------------------------------------------------------------------------------
 >>>
 ```
+
 
 
 Specify a threshold to control the granularity of the comparison for numeric columns. 
@@ -448,7 +443,7 @@ Specify a threshold to control the granularity of the comparison for numeric col
 ...     }
 ... )
 >>>
->>> compare_df 
+>>> compare_df = pl.DataFrame(
 ...     {
 ...         "ID": ["123456", "1234567", "1234567810"],
 ...         "Example1": [1.114, 6.14, 3.12],
@@ -484,10 +479,9 @@ shape: (2, 4)
 ```
 
 
+
 Example using alias for base and compare dataframes. 
 
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 
 ```python
 >>> import polars as pl
@@ -507,7 +501,7 @@ between two tables then this tool can help you.
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
 ...     },
-..
+... )
 >>>
 >>> compare_result = compare(["ID"],
 ...                          base_df,
@@ -541,6 +535,7 @@ shape: (1, 4)
 >>>
 ```
 
+
 Assert two frames are equal for a test 
 
 
@@ -551,8 +546,6 @@ Assert two frames are equal for a test
 >>>
 >>> def test_example():
 ...     base_df = pl.DataFrame(
-If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
-between two tables then this tool can help you.
 ...         {
 ...             "ID": ["123456", "1234567", "12345678"],
 ...             "Example1": [1, 6, 3],
@@ -572,7 +565,7 @@ between two tables then this tool can help you.
 ...
 >>> test_example() # doctest: +IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
-  File 
+  File "<stdin>", line 1, in <module>
   File "<stdin>", line 18, in test_example
 Exception: --------------------------------------------------------------------------------
 COMPARISON REPORT
@@ -606,6 +599,7 @@ End of Report
 --------------------------------------------------------------------------------
 >>>
 ```
+
 
 
 ### To DO:
