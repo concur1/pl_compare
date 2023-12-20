@@ -5,11 +5,11 @@
 You will find pl-compare useful if you find yourself writing various SQL/Dataframe operations to:
 - Understand how well two tables Reconcile [example](#Full-report)
 - Find the schema differences between two tables [example](#Schema-differences-summary-and-details)
-
 - Find counts or examples of rows that exist in one table but not another [example](#Row-differences-summary-and-details)
-- Find counts or examples of value differences between two tables
-- Assert that two tables are exactly equal (such as for an automated test)
-- Assert that two tables have matching schemas, rows or column values 
+- Find counts or examples of value differences between two tables [example](#Value-differences-summary-and-details)
+- Assert that two tables are exactly equal (such as for an automated test) [example](#Assert-two-frames-are-equal-for-a-test)
+- Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema,-row-and-value-differences)
+
 
 - Get statistical summaries and/or examples and/or a boolean to indicate:
   - Schema differences
@@ -541,7 +541,7 @@ shape: (1, 4)
 ```
 
 
-Assert two frames are equal for a test 
+### Assert two frames are equal for a test 
 
 
 ```python
