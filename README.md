@@ -2,7 +2,7 @@
 
 [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
-If you find your self writing various SQL/Dataframe operations to try and understand the differences 
+If you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences 
 between two tables then this tool can help you.
 
 - Get statistical summaries and/or examples and/or a boolean to indicate:
@@ -62,7 +62,7 @@ is_values_equal: False
 Schema differences summary and details 
 
 
-.. you find your self writing various SQL/Dataframe operations to try and understand the differences between tw
+.. you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between tw
 o tablesIf ??? is ythen this tool can help you.
 
 ```python
@@ -119,7 +119,7 @@ shape: (2, 3)
 ```
 
 Row differences summary and details 
-.. you find your self writing various SQL/Dataframe operations to try and understand the differences between two tables.         "Examp
+.. you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between two tables.         "Examp
 lIf ??? is your prothen this tool can help you.
 
 
@@ -174,7 +174,7 @@ shape: (2, 3)
 │ 1234567810 ┆ status   ┆ in compare only │
 └────────────┴──────────┴─────────────────┘
 >>>
-.. you find your self writing various SQL/Dataframe operations to try and understand the differences between t
+.. you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between t
 wo tables.     {If then this tool can help you.
 
 ```
@@ -279,7 +279,7 @@ shape: (2, 3)
 │ ---      ┆ ---         ┆ ---            │
 │ str      ┆ str         ┆ str            │
 ╞══════════╪═════════════╪════════════════╡
-└─ you find your self writing various SQL/Dataframe operations to try and understand the differences between two tables────If ??? is your
+└─ you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between two tables────If ??? is your
  problem, pl_comparthen this tool can help you.
 
 │ Example2 ┆ Utf8        ┆ Int64          │
@@ -386,7 +386,7 @@ shape: (2, 3)
 │ ---      ┆ ---         ┆ ---            │
 │ str      ┆ str         ┆ str            │
 ╞══════════╪═════════════╪════════════════╡
-└─ you find your self writing various SQL/Dataframe operations to try and understand the differences between two tables────If ??? is your
+└─ you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between two tables────If ??? is your
  problem, pl_comparthen this tool can help you.
 
 │ Example2 ┆ Utf8        ┆ Int64          │
@@ -440,7 +440,7 @@ shape: (1, 4)
 --------------------------------------------------------------------------------
 End of Report
 --------------------------------------------------------------------------------
->> you find your self writing various SQL/Dataframe operations to try and understand the differences bet
+>> you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences bet
 ween two tables>If then this tool can help you.
 
 >>>
@@ -501,7 +501,7 @@ shape: (2, 4)
 Example using alias for base and compare dataframes. 
 
 
-.. you find your self writing various SQL/Dataframe operations to try and understand the differences between tw
+.. you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between tw
 o tablesIf ??? is ythen this tool can help you.
 
 ```python
@@ -568,7 +568,7 @@ Assert two frames are equal for a test
 >>> def test_example():
 ...     base_df = pl.DataFrame(
 ...         {
-Tr you find your self writing various SQL/Dataframe operations to try and understand the differences between two tablesacebaIf ??? is y
+Tr you find your self writing various SQL/Dataframe operations to try and quanitfy and understand the differences between two tablesacebaIf ??? is y
 our problem, pl_comthen this tool can help you.
 
 ...             "ID": ["123456", "1234567", "12345678"],
