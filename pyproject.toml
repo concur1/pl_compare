@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pl_compare"
-version = "0.3.4"
+version = "0.3.5"
 description = "A tool to find the differences between two tables."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
@@ -27,3 +27,7 @@ line-length = 100
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.urls]
+"Repository" = "https://github.com/concur1/pl_compare"
+"Changelog" = "https://github.com/concur1/pl_compare/releases"
