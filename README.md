@@ -20,7 +20,7 @@
 pip install pl_compare
 ```
 
-### Examples (click to expand)
+### Examples
 
 Return booleans to check for schema, row and value differences 
 
@@ -76,7 +76,7 @@ Schema differences summary and details
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
 ...     },
-... )
+..
 >>>
 >>> compare_result = compare(["ID"], base_df, compare_df)
 >>> print("schemas_summary()")
@@ -129,7 +129,7 @@ Row differences summary and details
 ...         "ID": ["123456", "1234567", "1234567810"],
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
-...         "Example3": [1, 2, 3],
+...         "Exampl
 ...     },
 ... )
 >>>
@@ -180,7 +180,7 @@ Value differences summary and details
 ... )
 >>> compare_df = pl.DataFrame(
 ...     {
-...         "ID": ["123456", "1234567", "1234567810"],
+...       
 ...         "Example1": [1, 2, 3],
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
@@ -281,7 +281,7 @@ shape: (5, 2)
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
-shape: (2, 3)
+shape:
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
 │ ---        ┆ ---      ┆ ---             │
@@ -384,7 +384,7 @@ shape: (5, 2)
 │ Rows only in compare     ┆ 1     │
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
-shape: (2, 3)
+shape:
 ┌────────────┬──────────┬─────────────────┐
 │ ID         ┆ variable ┆ value           │
 │ ---        ┆ ---      ┆ ---             │
@@ -434,7 +434,7 @@ Specify a threshold to control the granularity of the comparison for numeric col
 ...     }
 ... )
 >>>
->>> compare_df = pl.DataFrame(
+>>> compare_df 
 ...     {
 ...         "ID": ["123456", "1234567", "1234567810"],
 ...         "Example1": [1.114, 6.14, 3.12],
@@ -491,7 +491,7 @@ Example using alias for base and compare dataframes.
 ...         "Example2": [1, 2, 3],
 ...         "Example3": [1, 2, 3],
 ...     },
-... )
+..
 >>>
 >>> compare_result = compare(["ID"],
 ...                          base_df,
@@ -554,7 +554,7 @@ Assert two frames are equal for a test
 ...
 >>> test_example() # doctest: +IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
+  File 
   File "<stdin>", line 18, in test_example
 Exception: --------------------------------------------------------------------------------
 COMPARISON REPORT
