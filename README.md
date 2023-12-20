@@ -11,6 +11,7 @@ You will find pl-compare useful if you find yourself writing various SQL/Datafra
 - Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema,-row-and-value-differences)
 
 
+With pl-compare you can:
 - Get statistical summaries and/or examples and/or a boolean to indicate:
   - Schema differences
   - Row differences
