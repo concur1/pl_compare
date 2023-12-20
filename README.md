@@ -4,8 +4,9 @@
 
 You will find pl-compare useful if you find yourself writing various SQL/Dataframe operations to:
 - Understand how well two tables Reconcile [example](#Full-report)
-- Find the schema differences between two tables
-- Find counts or examples of rows that exist in one table but not another
+- Find the schema differences between two tables [example](#Schema-differences-summary-and-details)
+
+- Find counts or examples of rows that exist in one table but not another [example](#Row-differences-summary-and-details)
 - Find counts or examples of value differences between two tables
 - Assert that two tables are exactly equal (such as for an automated test)
 - Assert that two tables have matching schemas, rows or column values 
