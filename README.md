@@ -8,7 +8,7 @@
 - Find counts or examples of rows that exist in one table but not another [example](#Row-differences-summary-and-details)
 - Find counts or examples of value differences between two tables [example](#Value-differences-summary-and-details)
 - Assert that two tables are exactly equal (such as for an automated test) [example](#Assert-two-frames-are-equal-for-a-test)
-- Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema,-row-and-value-differences)
+- Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema-row-and-value-differences)
 
 
 **With pl-compare you can**:
