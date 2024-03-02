@@ -436,6 +436,10 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 
 class FuncAppend:
+    """
+    When initialised FuncAppend will take a function as an argument. This function will be called for a value whenevr a value is supplied to the append method.
+    """
+
     def __init__(self, func: Union[Callable[[str], None], None] = None):
         self.special_list: List[str] = []
         self.func = func
@@ -468,7 +472,7 @@ class compare:
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
-        validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
+        validate: Literal["m:m", "m:1", "1:m", "1:1"] = "m:m",
     ):
         """
         Initialize a new instance of the compare class.

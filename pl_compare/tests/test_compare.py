@@ -332,22 +332,22 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
         },
     )
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:1").values_summary()
+        compare(["ID", "ID2"], base_df, compare_df, validate="1:1").values_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:1").rows_summary()
+        compare(["ID", "ID2"], base_df, compare_df, validate="1:1").rows_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "1:1").values_summary()
+        compare(["ID", "ID2"], compare_df, base_df, validate="1:1").values_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "1:1").rows_summary()
+        compare(["ID", "ID2"], compare_df, base_df, validate="1:1").rows_summary()
 
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:m").values_summary()
+        compare(["ID", "ID2"], base_df, compare_df, validate="1:m").values_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], base_df, compare_df, "1:m").rows_summary()
+        compare(["ID", "ID2"], base_df, compare_df, validate="1:m").rows_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "m:1").values_summary()
+        compare(["ID", "ID2"], compare_df, base_df, validate="m:1").values_summary()
     with pytest.raises(pl.exceptions.ComputeError):
-        compare(["ID", "ID2"], compare_df, base_df, "m:1").rows_summary()
+        compare(["ID", "ID2"], compare_df, base_df, validate="m:1").rows_summary()
 
     # the following rise an error with this message:
     # E       polars.exceptions.ComputeError: 1:1 validation on a INNER is not yet supported for multiple keys
