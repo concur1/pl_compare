@@ -687,7 +687,9 @@ class compare:
             combined.append("No Row differences found (when joining by the supplied join_columns).")
         combined.append(80 * "-")
         if not self.is_values_equal():
-            combined.append(f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}")
+            combined.append(
+                f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}"
+            )
         else:
             combined.append("No Column Value differences found.")
         combined.append(80 * "-")
