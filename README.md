@@ -637,6 +637,8 @@ End of Report
 - [x] Add percentage column so the value differences summary.
 - [x] Change id_columns to be named 'join_columns' 
 - [x] Github actions for publishing
+- [] Update the duplication validation.
+
 - [] Fix report output when tables are exactly equal.
 - [] add a test that checks that abritrary join conditions work.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
