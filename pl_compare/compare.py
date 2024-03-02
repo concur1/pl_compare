@@ -673,7 +673,7 @@ class compare:
         combined.append(80 * "-")
         if self.is_equal():
             combined.append("Tables are exactly equal.")
-            return None
+            return combined
         if not self.is_schemas_equal():
             combined.append(
                 f"\nSCHEMA DIFFERENCES:\n{self.schemas_summary()}\n{self.schemas_sample()}"
