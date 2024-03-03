@@ -9,7 +9,6 @@ from dataclasses import dataclass
 @dataclass
 class ComparisonMetadata:
     """Class for holding the (meta)data used to generate the comparison dataframes."""
-
     join_columns: List[str]
     base_df: pl.LazyFrame
     compare_df: pl.LazyFrame
@@ -692,7 +691,7 @@ class compare:
         combined.append(80 * "-")
         if not self.is_values_equal():
             combined.append(
-                f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}"
+                f"\nVALUE D:\n{self.values_summary()}\n{self.values_sample()}"
             )
         else:
             combined.append("No Column Value differences found.")
