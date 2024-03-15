@@ -47,9 +47,10 @@ jobs:
       run: poetry install --no-interaction
 
     - name: Run linting
-      run: poetry run ruff .
-      run: poetry run balck --check .
-      run: poetry run mypy --strict .
+      run: |
+        poetry run ruff .
+        poetry run balck --check .
+        poetry run mypy --strict .
 
     - name: Run tests
       run: poetry run pytest .
