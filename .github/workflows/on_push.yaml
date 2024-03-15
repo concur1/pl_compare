@@ -46,11 +46,6 @@ jobs:
     - name: Install project
       run: poetry install --no-interaction
 
-    - name: Run linting
+    - name: Run checks
       run: |
-        poetry run ruff .
-        poetry run balck --check .
-        poetry run mypy --strict pl_compare/compare.py
-
-    - name: Run tests
-      run: poetry run pytest -v --doctest-glob="README.md"
+        poetry run make check
