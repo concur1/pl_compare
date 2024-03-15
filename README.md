@@ -637,15 +637,14 @@ End of Report
 - [x] Add percentage column so the value differences summary.
 - [x] Change id_columns to be named 'join_columns' 
 - [x] Github actions for publishing
-- [] Update the duplication validation.
-
-- [] Fix report output when tables are exactly equal.
-- [] add a test that checks that abritrary join conditions work.
-- [] Add a count of the number of rows that have any differences to the value differences summary.
-- [] Simplify custom equality checks and add example.
-- [] Test for large amounts of data
-- [] Benchmark for different sizes of data.
+- [x] Update the duplication validation.
+- [x] Fix report output when tables are exactly equal.
 - [] Github actions for testing
 - [] Github actions for linting
+- [] Test for large amounts of data
+- [] Benchmark for different sizes of data.
+- [] Simplify custom equality checks and add example.
 - [] Investigate use for very large datasets 50GB-100GB. Can this be done using LazyFrames only?
+- [] Add a count of the number of rows that have any differences to the value differences summary.
+- [] add a test that checks that abritrary join conditions work.
 

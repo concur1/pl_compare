@@ -190,8 +190,6 @@ def get_equality_check(
             | (~pl.col(f"{col}_base").is_null() & pl.col(f"{col}_compare").is_null())
         )
 
-    if equality_check is not None:
-        return equality_check(col, format)
     if resolution is not None and format in [
         pl.Float32,
         pl.Float64,
@@ -207,6 +205,8 @@ def get_equality_check(
         pl.UInt64,
     ]:
         return ignore_numeric_differences_equality_check(col, format)
+    if equality_check is not None:
+        return equality_check(col, format)
     return default_equality_check(col, format)
 
 
