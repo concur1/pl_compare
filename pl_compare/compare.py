@@ -148,10 +148,10 @@ def get_compare_only_rows(
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_only_rows = get_base_only_rows(
         meta.join_columns, meta.base_df, meta.compare_df
-    ).with_row_count()
+    ).with_row_index()
     compare_only_rows = get_compare_only_rows(
         meta.join_columns, meta.base_df, meta.compare_df
-    ).with_row_count()
+    ).with_row_index()
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
@@ -162,8 +162,8 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 compare_only_rows,
             ]
         )
-        .sort("row_nr")
-        .drop("row_nr")
+        .sort("index")
+        .drop("index")
     )
 
 
@@ -215,7 +215,7 @@ def get_combined_tables(
     compare_df: pl.LazyFrame,
     compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
-    how_join: Literal["inner", "outer"] = "inner",
+    how_join: Literal["inner", "outer_coalesce"] = "inner",
     resolution: Union[float, None] = None,
     validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
 ) -> pl.LazyFrame:
@@ -316,7 +316,7 @@ def get_columns_to_compare(
 
 
 def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
-    how_join: Literal["inner", "outer"] = "inner"
+    how_join: Literal["inner", "outer_coalesce"] = "inner"
     if meta.schema_comparison:
         how_join = "outer_coalesce"
     compare_columns = get_columns_to_compare(meta)
@@ -491,9 +491,9 @@ class compare:
         base_lazy_df = convert_to_lazyframe(base_df)
         compare_lazy_df = convert_to_lazyframe(compare_df)
         if join_columns is None or join_columns == []:
-            base_lazy_df = base_lazy_df.with_row_count(offset=1).rename({"row_nr": "row_number"})
-            compare_lazy_df = compare_lazy_df.with_row_count(offset=1).rename(
-                {"row_nr": "row_number"}
+            base_lazy_df = base_lazy_df.with_row_index(offset=1).rename({"index": "row_number"})
+            compare_lazy_df = compare_lazy_df.with_row_index(offset=1).rename(
+                {"index": "row_number"}
             )
             join_columns = ["row_number"]
 
