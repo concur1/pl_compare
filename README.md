@@ -639,12 +639,14 @@ End of Report
 - [x] Github actions for publishing
 - [x] Update the duplication validation.
 - [x] Fix report output when tables are exactly equal.
-- [] Github actions for testing
-- [] Github actions for linting
+- [x] Github actions for testing
+- [x] Github actions for linting
 - [] Test for large amounts of data
 - [] Benchmark for different sizes of data.
-- [] Simplify custom equality checks and add example.
 - [] Investigate use for very large datasets 50GB-100GB. Can this be done using LazyFrames only?
+
+## Ideas:
+- [] Simplify custom equality checks and add example.
 - [] Add a count of the number of rows that have any differences to the value differences summary.
 - [] add a test that checks that abritrary join conditions work.
 
