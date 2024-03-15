@@ -10,6 +10,8 @@
 - Assert that two tables are exactly equal (such as for an automated test) [example](#Assert-two-frames-are-equal-for-a-test)
 - Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema-row-and-value-differences)
 
+[Click for a jupyter notebook with example usage](https://github.com/concur1/pl_compare/blob/main/pl_compare_demo.ipynb)
+
 ![](demo1.gif)
 
 **With pl-compare you can**:
