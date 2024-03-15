@@ -91,7 +91,7 @@ def test_expected_values_returned_for_schema_differences(base_df, compare_df):
     expected_schema_differnces = pl.DataFrame(
         {
             "column": ["Example2", "Example3"],
-            "base_format": ["Utf8", None],
+            "base_format": ["String", None],
             "compare_format": ["Int64", "Int64"],
         }
     )
@@ -239,29 +239,29 @@ def test_sample_limit():
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=1)
         .values_sample()
-        .select(pl.count())
+        .select(pl.len().alias("Count"))
         .item()
         == 1
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=1).rows_sample().select(pl.count()).item()
+        compare(["ID"], base_df, compare_df, sample_limit=1).rows_sample().select(pl.len().alias("Count")).item()
         == 2
     )
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=2)
         .values_sample()
-        .select(pl.count())
+        .select(pl.len().alias("Count"))
         .item()
         == 2
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=2).rows_sample().select(pl.count()).item()
+        compare(["ID"], base_df, compare_df, sample_limit=2).rows_sample().select(pl.len().alias("Count")).item()
         == 4
     )
     assert (
         compare(["ID"], base_df, compare_df, sample_limit=2, resolution=1)
         .values_sample()
-        .select(pl.count())
+        .select(pl.len().alias("Count"))
         .item()
         == 1
     )
