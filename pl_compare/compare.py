@@ -247,7 +247,7 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     )
     total_value_comparisons = value_differences.select(
         pl.lit("Total Value Comparisons").alias("Value Differences"),
-        pl.len().alias("Count").alias("Count"),
+        pl.len().alias("Count"),
         pl.lit(100.0).alias("Percentage"),
     )
     value_comparisons = (
@@ -261,15 +261,15 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
         pl.sum("Count").alias("Count"),
         (pl.sum("Count") / pl.lit(0.01 * value_comparisons)).alias("Percentage"),
     )
-    columns_compared = final_df.select(pl.len().alias("Count").alias("Count")).collect(streaming=True).item()
+    columns_compared = final_df.select(pl.len().alias("Count")).collect(streaming=True).item()
     value_comparisons_per_column = value_comparisons / columns_compared
     final_df_with_percentages = final_df.with_columns(
         (pl.col("Count") / pl.lit(0.01 * value_comparisons_per_column)).alias("Percentage")
     )
     final_df2 = pl.concat(
         [
-            total_differences.collect(streaming=True),
-            final_df_with_percentages.collect(streaming=True),
+            total_differences.collect(),
+            final_df_with_percentages.collect(),
         ]
     )
     if meta.hide_empty_stats:
