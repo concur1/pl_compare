@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8, 3.9, 3.10]
 
     steps:
     - uses: actions/checkout@v2
@@ -46,5 +46,10 @@ jobs:
     - name: Install project
       run: poetry install --no-interaction
 
+    - name: Run linting
+      run: poetry run ruff .
+      run: poetry run balck --check .
+      run: poetry run mypy --strict .
+
     - name: Run tests
-      run: poetry run pytest
+      run: poetry run pytest .
