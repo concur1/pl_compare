@@ -50,7 +50,7 @@ def duplicate_examples(df: Union[pl.LazyFrame, pl.DataFrame]) -> Union[pl.LazyFr
 
 def convert_to_dataframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.DataFrame:
     if isinstance(df, pl.LazyFrame):
-        df = df.collect(streaming=True)
+        df = df.collect()
     return df
 
 
@@ -70,7 +70,7 @@ def set_df_type(
 
 
 def get_uncertain_row_count(df: pl.LazyFrame) -> int:
-    df_solid = convert_to_dataframe(df.select("count"))
+    df_solid = convert_to_dataframe(df.select("Count"))
     if df_solid.height > 0:
         row_count: int = df_solid.item()
         return row_count
@@ -82,15 +82,14 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias("in_base")]).join(
         meta.compare_df.select(meta.join_columns + [pl.lit(True).alias("in_compare")]),
         on=meta.join_columns,
-        how="outer",
+        how="outer_coalesce",
         validate=meta.validate,
     )
     grouped_rows = (
         combined_table.select(meta.join_columns + ["in_base", "in_compare"])
         .group_by(["in_base", "in_compare"])
-        .agg(pl.count())
+        .agg(pl.len().alias("Count"))
     )
-
     base_only_rows = get_uncertain_row_count(
         grouped_rows.filter(pl.col("in_base") & pl.col("in_compare").is_null())
     )
@@ -248,7 +247,7 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     )
     total_value_comparisons = value_differences.select(
         pl.lit("Total Value Comparisons").alias("Value Differences"),
-        pl.count().alias("Count"),
+        pl.len().alias("Count").alias("Count"),
         pl.lit(100.0).alias("Percentage"),
     )
     value_comparisons = (
@@ -262,7 +261,7 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
         pl.sum("Count").alias("Count"),
         (pl.sum("Count") / pl.lit(0.01 * value_comparisons)).alias("Percentage"),
     )
-    columns_compared = final_df.select(pl.count().alias("Count")).collect(streaming=True).item()
+    columns_compared = final_df.select(pl.len().alias("Count").alias("Count")).collect(streaming=True).item()
     value_comparisons_per_column = value_comparisons / columns_compared
     final_df_with_percentages = final_df.with_columns(
         (pl.col("Count") / pl.lit(0.01 * value_comparisons_per_column)).alias("Percentage")
@@ -319,7 +318,7 @@ def get_columns_to_compare(
 def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     how_join: Literal["inner", "outer"] = "inner"
     if meta.schema_comparison:
-        how_join = "outer"
+        how_join = "outer_coalesce"
     compare_columns = get_columns_to_compare(meta)
     combined_tables = get_combined_tables(
         meta.join_columns,
@@ -379,7 +378,6 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
             "format": [str(val) for val in meta.compare_df.schema.values()],
         }
     )
-
     return get_column_value_differences_filtered(
         ComparisonMetadata(
             join_columns=["column"],
@@ -406,7 +404,7 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
             & pl.col(f"{meta.compare_alias}_format").is_not_null()
             & (pl.col(f"{meta.base_alias}_format") != pl.col(f"{meta.compare_alias}_format"))
         )
-        .select(pl.count())
+        .select(pl.len().alias("Count"))
         .collect(streaming=True)
         .item()
     )
