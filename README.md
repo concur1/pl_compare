@@ -106,7 +106,7 @@ shape: (6, 2)
 │ Columns in base and compare     ┆ 3     │
 │ Columns only in base            ┆ 0     │
 │ Columns only in compare         ┆ 1     │
-│ Columns with schema differences ┆ 1     │
+│ Columns with schema difference... ┆ 1     │
 └─────────────────────────────────┴───────┘
 >>> print("schemas_sample()")
 schemas_sample()
@@ -270,7 +270,7 @@ shape: (6, 2)
 │ Columns in base and compare     ┆ 3     │
 │ Columns only in base            ┆ 0     │
 │ Columns only in compare         ┆ 1     │
-│ Columns with schema differences ┆ 1     │
+│ Columns with schema difference... ┆ 1     │
 └─────────────────────────────────┴───────┘
 shape: (2, 3)
 ┌──────────┬─────────────┬────────────────┐

@@ -21,4 +21,4 @@ check: ## Runs checks using ruff, black, mypy and pytest
 
 .PHONY: test
 test: ## Runs tests
-	-pytest -v --doctest-glob="README.md"
+	-pytest --doctest-glob="README.md" -v

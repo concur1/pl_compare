@@ -1,8 +1,6 @@
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
-from polars.type_aliases import PolarsType
-import types
-from typing import Literal, Callable, List, Union, Dict, Any
+from typing import Literal, Callable, List, Union, Dict
 from dataclasses import dataclass
 
 
@@ -82,7 +80,8 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias("in_base")]).join(
         meta.compare_df.select(meta.join_columns + [pl.lit(True).alias("in_compare")]),
         on=meta.join_columns,
-        how="outer_coalesce",
+        how="full",
+        coalesce=True,
         validate=meta.validate,
     )
     grouped_rows = (
@@ -97,7 +96,12 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         grouped_rows.filter(pl.col("in_base").is_null() & pl.col("in_compare"))
     )
     shared_rows = get_uncertain_row_count(
-        grouped_rows.filter(pl.col("in_base") & pl.col("in_compare"))
+        grouped_rows.filter(
+            pl.col("in_base")
+            & pl.col("in_base").is_not_null()
+            & pl.col("in_compare")
+            & pl.col("in_compare").is_not_null()
+        )
     )
     final_df = (
         pl.DataFrame(
@@ -127,8 +131,8 @@ def get_base_only_rows(
         on=join_columns,
         how="anti",
     )
-    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).melt(
-        id_vars=join_columns, value_vars=["status"]
+    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).unpivot(
+        index=join_columns, on=["status"]
     )
 
 
@@ -140,8 +144,8 @@ def get_compare_only_rows(
     combined_table = compare_df.select(join_columns).join(
         base_df.select(join_columns), on=join_columns, how="anti"
     )
-    return combined_table.select(join_columns + [pl.lit("in compare only").alias("status")]).melt(
-        id_vars=join_columns, value_vars=["status"]
+    return combined_table.select(join_columns + [pl.lit("in compare only").alias("status")]).unpivot(
+        index=join_columns, on=["status"]
     )
 
 
@@ -215,7 +219,8 @@ def get_combined_tables(
     compare_df: pl.LazyFrame,
     compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
-    how_join: Literal["inner", "outer_coalesce"] = "inner",
+    coalesce: bool,
+    how_join: Literal["inner", "full"] = "inner",
     resolution: Union[float, None] = None,
     validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
 ) -> pl.LazyFrame:
@@ -227,6 +232,7 @@ def get_combined_tables(
         compare_df.with_columns([pl.lit(True).alias("in_compare")]),
         on=join_columns,
         how=how_join,
+        coalesce=coalesce,
         validate=validate,
     )
     return compare_df.with_columns(
@@ -308,17 +314,19 @@ def get_columns_to_compare(
 
     return {
         col: format
-        for col, format in meta.base_df.schema.items()
+        for col, format in meta.base_df.collect_schema().items()
         if col not in meta.join_columns
         and col not in columns_to_exclude
-        and col in meta.compare_df.columns
+        and col in meta.compare_df.collect_schema().names()
     }
 
 
 def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
-    how_join: Literal["inner", "outer_coalesce"] = "inner"
+    how_join: Literal["inner", "full"] = "inner"
+    coalesce: bool = False
     if meta.schema_comparison:
-        how_join = "outer_coalesce"
+        how_join = "full"
+        coalesce = True
     compare_columns = get_columns_to_compare(meta)
     combined_tables = get_combined_tables(
         meta.join_columns,
@@ -327,6 +335,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         compare_columns,
         meta.equality_check,
         resolution=meta.resolution,
+        coalesce=coalesce,
         how_join=how_join,
         validate=meta.validate,
     )
@@ -343,9 +352,9 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 for col, format in compare_columns.items()
             ]
         )
-        .melt(
-            id_vars=meta.join_columns,
-            value_vars=[col for col, format in compare_columns.items()],
+        .unpivot(
+            index=meta.join_columns,
+            on=[col for col, format in compare_columns.items()],
         )
         .unnest("value")
     )
@@ -368,14 +377,14 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFr
 def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_df_schema = pl.LazyFrame(
         {
-            "column": meta.base_df.schema.keys(),
-            "format": [str(val) for val in meta.base_df.schema.values()],
+            "column": meta.base_df.collect_schema().keys(),
+            "format": [str(val) for val in meta.base_df.collect_schema().values()],
         }
     )
     compare_df_schema = pl.LazyFrame(
         {
-            "column": meta.compare_df.schema.keys(),
-            "format": [str(val) for val in meta.compare_df.schema.values()],
+            "column": meta.compare_df.collect_schema().keys(),
+            "format": [str(val) for val in meta.compare_df.collect_schema().values()],
         }
     )
     return get_column_value_differences_filtered(
@@ -419,11 +428,11 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 "Columns with schema differences",
             ],
             "Count": [
-                len(meta.base_df.columns),
-                len(meta.compare_df.columns),
-                len([col for col in meta.compare_df.columns if col in meta.base_df]),
-                len([col for col in meta.base_df.columns if col not in meta.compare_df.columns]),
-                len([col for col in meta.compare_df.columns if col not in meta.base_df.columns]),
+                len(meta.base_df.collect_schema().names()),
+                len(meta.compare_df.collect_schema().names()),
+                len([col for col in meta.compare_df.collect_schema().names() if col in meta.base_df]),
+                len([col for col in meta.base_df.collect_schema().names() if col not in meta.compare_df.collect_schema().names()]),
+                len([col for col in meta.compare_df.collect_schema().names() if col not in meta.base_df.collect_schema().names()]),
                 schema_differences,
             ],
         }
