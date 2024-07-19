@@ -274,8 +274,8 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     )
     final_df2 = pl.concat(
         [
-            total_differences.collect(),
-            final_df_with_percentages.collect(),
+            total_differences.collect(streaming=True),
+            final_df_with_percentages.collect(streaming=True),
         ]
     )
     if meta.hide_empty_stats:

@@ -646,6 +646,7 @@ End of Report
 - [] Test for large amounts of data
 - [] Benchmark for different sizes of data.
 - [] Investigate use for very large datasets 50GB-100GB. Can this be done using LazyFrames only?
+- [] There still seems to be a bug when converting from lazy to data frame using streaming (i.e. in the convert_to_dataframe function)
 
 ## Ideas:
 - [] Simplify custom equality checks and add example.
