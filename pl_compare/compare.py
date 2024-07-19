@@ -144,9 +144,9 @@ def get_compare_only_rows(
     combined_table = compare_df.select(join_columns).join(
         base_df.select(join_columns), on=join_columns, how="anti"
     )
-    return combined_table.select(join_columns + [pl.lit("in compare only").alias("status")]).unpivot(
-        index=join_columns, on=["status"]
-    )
+    return combined_table.select(
+        join_columns + [pl.lit("in compare only").alias("status")]
+    ).unpivot(index=join_columns, on=["status"])
 
 
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -430,9 +430,23 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
             "Count": [
                 len(meta.base_df.collect_schema().names()),
                 len(meta.compare_df.collect_schema().names()),
-                len([col for col in meta.compare_df.collect_schema().names() if col in meta.base_df]),
-                len([col for col in meta.base_df.collect_schema().names() if col not in meta.compare_df.collect_schema().names()]),
-                len([col for col in meta.compare_df.collect_schema().names() if col not in meta.base_df.collect_schema().names()]),
+                len(
+                    [col for col in meta.compare_df.collect_schema().names() if col in meta.base_df]
+                ),
+                len(
+                    [
+                        col
+                        for col in meta.base_df.collect_schema().names()
+                        if col not in meta.compare_df.collect_schema().names()
+                    ]
+                ),
+                len(
+                    [
+                        col
+                        for col in meta.compare_df.collect_schema().names()
+                        if col not in meta.base_df.collect_schema().names()
+                    ]
+                ),
                 schema_differences,
             ],
         }
