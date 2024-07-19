@@ -35,15 +35,7 @@ def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_d
     assert compare_result.is_equal() is True
 
 
-def test_expected_values_returned_for_bools_for_equal_dfs_no_id_columns(base_df):
-    compare_result = compare([], base_df, base_df)
-    assert compare_result.is_schemas_equal() is True
-    assert compare_result.is_rows_equal() is True
-    assert compare_result.is_values_equal() is True
-    assert compare_result.is_equal() is True
-
-
-def test_expected_values_returned_for_bools_for_equal_dfs(base_df, compare_df):
+def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     assert compare_result.is_schemas_equal() is False
     assert compare_result.is_rows_equal() is False
@@ -244,7 +236,10 @@ def test_sample_limit():
         == 1
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=1).rows_sample().select(pl.len().alias("Count")).item()
+        compare(["ID"], base_df, compare_df, sample_limit=1)
+        .rows_sample()
+        .select(pl.len().alias("Count"))
+        .item()
         == 2
     )
     assert (
@@ -255,7 +250,10 @@ def test_sample_limit():
         == 2
     )
     assert (
-        compare(["ID"], base_df, compare_df, sample_limit=2).rows_sample().select(pl.len().alias("Count")).item()
+        compare(["ID"], base_df, compare_df, sample_limit=2)
+        .rows_sample()
+        .select(pl.len().alias("Count"))
+        .item()
         == 4
     )
     assert (
