@@ -21,7 +21,7 @@ pandas = "^2.0.3"
 line-length = 100
 
 [tool.ruff]
-ignore = ["E501"]
+lint.ignore = ["E501"]
 line-length = 100
 
 [build-system]
