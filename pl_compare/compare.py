@@ -696,7 +696,7 @@ class compare:
         return len(get_columns_to_compare(self._comparison_metadata)) > 0
         
 
-    def report(self, print: Union[Callable[[str], None], None] = print) -> Union[FuncAppend, None]:
+    def report(self, print: Union[Callable[[str], None], None] = None) -> Union[FuncAppend, None]:
         """
         Generate a report of the comparison results.
 
