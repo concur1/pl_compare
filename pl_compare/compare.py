@@ -712,7 +712,7 @@ class compare:
         combined.append(80 * "-")
         if self.is_equal():
             combined.append("Tables are exactly equal.")
-            combined.append(f"\nSUMMARY:\n{self.summary()}")
+            combined.append(f"\nSUMMARY:\n{self.summary().filter(pl.col('Count')!=0)}")
             return combined
         if not self.is_schemas_equal():
             combined.append(

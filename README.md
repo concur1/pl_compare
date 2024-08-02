@@ -643,10 +643,10 @@ End of Report
 - [x] Fix report output when tables are exactly equal.
 - [x] Github actions for testing
 - [x] Github actions for linting
-- [ ] Add message when there are no columns left to be compared.
-- [ ] Add message when df's are exactly equal. 
-- [ ] Add test case with exactly equal dfs.
-- [ ] Add test case with no columns being compared. Make sure an error is raised when the value_summary and value_sample methods are called.
+- [x] Add message when there are no columns left to be compared.
+- [x] Add message when df's are exactly equal. 
+- [x] Add test case with exactly equal dfs.
+- [x] Add test case with no columns being compared. Make sure an error is raised when the value_summary and value_sample methods are called.
 - [] Test for large amounts of data
 - [] Benchmark for different sizes of data.
 - [] Investigate use for very large datasets 50GB-100GB. Can this be done using LazyFrames only?
