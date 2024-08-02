@@ -33,6 +33,18 @@ def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_d
     assert compare_result.is_rows_equal() is True
     assert compare_result.is_values_equal() is True
     assert compare_result.is_equal() is True
+    assert """┌─────────────────────────────┬───────┐
+│ Statistic                   ┆ Count │
+│ ---                         ┆ ---   │
+│ str                         ┆ i64   │
+╞═════════════════════════════╪═══════╡
+│ Columns in base             ┆ 4     │
+│ Columns in compare          ┆ 4     │
+│ Columns in base and compare ┆ 4     │
+│ Rows in base                ┆ 3     │
+│ Rows in compare             ┆ 3     │
+│ Rows in base and compare    ┆ 3     │
+└─────────────────────────────┴───────┘""" in str(compare_result.report())
 
 
 def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
@@ -348,3 +360,32 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     compare(["ID", "ID2"], base_df, compare_df, "m:1").rows_summary()
     compare(["ID", "ID2"], compare_df, base_df, "1:m").values_summary()
     compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
+
+
+
+def test_error_raised_when_no_columns_to_compare_exist():
+    base_df = pl.DataFrame(
+        {
+            "ID": ["123456", "123456", "1234567", "12345678"],
+            "ID2": ["123456", "123457", "1234567", "12345678"],
+            "ID3": ["123456", "123457", "1234567", "12345678"],
+            "ID4": ["123456", "123457", "1234567", "12345678"],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": ["123456", "1234567", "1234567810"],
+            "ID2": ["123456", "1234567", "1234567810"],
+            "ID3": ["123456", "1234567", "1234567810"],
+            "ID4": ["123456", "1234567", "1234567810"],
+        },
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_summary()
+    assert exc_info.value.args[0] == 'There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied.'
+
+    with pytest.raises(Exception) as exc_info:
+        compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_sample()
+    assert exc_info.value.args[0] == 'There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied.'
+
