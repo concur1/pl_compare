@@ -328,6 +328,10 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         how_join = "full"
         coalesce = True
     compare_columns = get_columns_to_compare(meta)
+    if len(compare_columns) == 0:
+        raise Exception(
+            "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
+        )
     combined_tables = get_combined_tables(
         meta.join_columns,
         meta.base_df,
@@ -615,7 +619,7 @@ class compare:
 
     def is_equal(self) -> bool:
         """
-        k if the two dataframes are unequal based on schema, rows, and values.
+        Check if the two dataframes are unequal based on schema, rows, and values.
 
         Returns:
             bool: True if the dataframes are unequal, False otherwise.
@@ -682,7 +686,17 @@ class compare:
             ]
         )
 
-    def report(self, print: Union[Callable[[str], None], None] = None) -> Union[FuncAppend, None]:
+    def _value_comparison_columns_exist(self) -> bool:
+        """
+        Checks if there are any columns to be used in the value comparison.
+
+        Returns:
+            bool: True if columns for value comparison exist. False if no columns exist for the value comparison.
+        """
+        return len(get_columns_to_compare(self._comparison_metadata)) > 0
+        
+
+    def report(self, print: Union[Callable[[str], None], None] = print) -> Union[FuncAppend, None]:
         """
         Generate a report of the comparison results.
 
@@ -698,6 +712,7 @@ class compare:
         combined.append(80 * "-")
         if self.is_equal():
             combined.append("Tables are exactly equal.")
+            combined.append(f"\nSUMMARY:\n{self.summary()}")
             return combined
         if not self.is_schemas_equal():
             combined.append(
@@ -711,7 +726,7 @@ class compare:
         else:
             combined.append("No Row differences found (when joining by the supplied join_columns).")
         combined.append(80 * "-")
-        if not self.is_values_equal():
+        if not self.is_values_equal() and self._value_comparison_columns_exist():
             combined.append(
                 f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}"
             )
