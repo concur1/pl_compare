@@ -726,12 +726,14 @@ class compare:
         else:
             combined.append("No Row differences found (when joining by the supplied join_columns).")
         combined.append(80 * "-")
-        if not self.is_values_equal() and self._value_comparison_columns_exist():
+        if not self._value_comparison_columns_exist():
+            combined.append("No columns to compare.")
+        elif self.is_values_equal():
+            combined.append("No Column Value differences found.")
+        elif not self.is_values_equal() :
             combined.append(
                 f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}"
             )
-        else:
-            combined.append("No Column Value differences found.")
         combined.append(80 * "-")
         combined.append("End of Report")
         combined.append(80 * "-")
