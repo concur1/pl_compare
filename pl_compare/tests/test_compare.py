@@ -389,3 +389,34 @@ def test_error_raised_when_no_columns_to_compare_exist():
         compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_sample()
     assert exc_info.value.args[0] == 'There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied.'
 
+
+def test_comparing_list_raises_exception():
+   """Polars has a bug/regression where an unpivot will not work if on columns of multiple types are used.
+
+   It has been raised here: https://github.com/pola-rs/polars/issues/17501
+
+   Once this test starts failing (i.e. an exception is no longer raised) the issue should be fixed.
+   
+   The error:
+   E       polars.exceptions.InvalidOperationError: 'unpivot' not supported for dtype: struct[3]
+   
+   """
+
+   base_df = pl.LazyFrame(
+       {
+           "ID": ["1", "2", "3", ],
+           "col1": ["1", "2", "3", ],
+           "col2": [[True], [True], [True, False]],
+       }
+   )
+   compare_df = pl.LazyFrame(
+       {
+           "ID": ["1", "2", "3", ],
+           "col1": ["1", "2", "3", ],
+           "col2": [[True], [True], [True, False]],
+       }
+   )
+   comp = compare(["ID"], base_df, compare_df)
+   with pytest.raises(Exception) as e_info:
+       comp.is_equal()
+
