@@ -44,7 +44,9 @@ def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_d
 │ Rows in base                ┆ 3     │
 │ Rows in compare             ┆ 3     │
 │ Rows in base and compare    ┆ 3     │
-└─────────────────────────────┴───────┘""" in str(compare_result.report())
+└─────────────────────────────┴───────┘""" in str(
+        compare_result.report()
+    )
 
 
 def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
@@ -362,7 +364,6 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
 
 
-
 def test_error_raised_when_no_columns_to_compare_exist():
     base_df = pl.DataFrame(
         {
@@ -383,40 +384,61 @@ def test_error_raised_when_no_columns_to_compare_exist():
 
     with pytest.raises(Exception) as exc_info:
         compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_summary()
-    assert exc_info.value.args[0] == 'There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied.'
+    assert (
+        exc_info.value.args[0]
+        == "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
+    )
 
     with pytest.raises(Exception) as exc_info:
         compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_sample()
-    assert exc_info.value.args[0] == 'There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied.'
+    assert (
+        exc_info.value.args[0]
+        == "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
+    )
 
 
 def test_comparing_list_raises_exception():
-   """Polars has a bug/regression where an unpivot will not work if on columns of multiple types are used.
+    """Polars has a bug/regression where an unpivot will not work if on columns of multiple types are used.
 
-   It has been raised here: https://github.com/pola-rs/polars/issues/17501
+    It has been raised here: https://github.com/pola-rs/polars/issues/17501
 
-   Once this test starts failing (i.e. an exception is no longer raised) the issue should be fixed.
-   
-   The error:
-   E       polars.exceptions.InvalidOperationError: 'unpivot' not supported for dtype: struct[3]
-   
-   """
+    Once this test starts failing (i.e. an exception is no longer raised) the issue should be fixed.
 
-   base_df = pl.LazyFrame(
-       {
-           "ID": ["1", "2", "3", ],
-           "col1": ["1", "2", "3", ],
-           "col2": [[True], [True], [True, False]],
-       }
-   )
-   compare_df = pl.LazyFrame(
-       {
-           "ID": ["1", "2", "3", ],
-           "col1": ["1", "2", "3", ],
-           "col2": [[True], [True], [True, False]],
-       }
-   )
-   comp = compare(["ID"], base_df, compare_df)
-   with pytest.raises(Exception) as e_info:
-       comp.is_equal()
+    The error:
+    E       polars.exceptions.InvalidOperationError: 'unpivot' not supported for dtype: struct[3]
 
+    """
+
+    base_df = pl.LazyFrame(
+        {
+            "ID": [
+                "1",
+                "2",
+                "3",
+            ],
+            "col1": [
+                "1",
+                "2",
+                "3",
+            ],
+            "col2": [[True], [True], [True, False]],
+        }
+    )
+    compare_df = pl.LazyFrame(
+        {
+            "ID": [
+                "1",
+                "2",
+                "3",
+            ],
+            "col1": [
+                "1",
+                "2",
+                "3",
+            ],
+            "col2": [[True], [True], [True, False]],
+        }
+    )
+    comp = compare(["ID"], base_df, compare_df)
+    with pytest.raises(Exception) as e_info:
+        comp.is_equal()

@@ -694,7 +694,6 @@ class compare:
             bool: True if columns for value comparison exist. False if no columns exist for the value comparison.
         """
         return len(get_columns_to_compare(self._comparison_metadata)) > 0
-        
 
     def report(self, print: Union[Callable[[str], None], None] = None) -> Union[FuncAppend, None]:
         """
@@ -730,7 +729,7 @@ class compare:
             combined.append("No columns to compare.")
         elif self.is_values_equal():
             combined.append("No Column Value differences found.")
-        elif not self.is_values_equal() :
+        elif not self.is_values_equal():
             combined.append(
                 f"\nVALUE DIFFERENCES:\n{self.values_summary()}\n{self.values_sample()}"
             )
