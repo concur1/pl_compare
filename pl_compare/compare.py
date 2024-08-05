@@ -686,6 +686,27 @@ class compare:
             ]
         )
 
+    def equals_summary(self) -> Union[pl.LazyFrame, pl.DataFrame]:
+        """
+        Get a summary of schema and row differences between two dataframes.
+        This is used for a short summary in the report when two dataframes are equal.
+
+        Returns:
+            Union[pl.LazyFrame, pl.DataFrame]: The summary of all differences.
+        """
+        return pl.concat(  # type: ignore
+            [
+                self.schemas_summary().filter(
+                    (pl.col("Statistic") == "Columns in base")
+                    | (pl.col("Statistic") == "Columns in compare")
+                ),
+                self.rows_summary().filter(
+                    (pl.col("Statistic") == "Rows in base")
+                    | (pl.col("Statistic") == "Rows in compare")
+                ),
+            ]
+        )
+
     def _value_comparison_columns_exist(self) -> bool:
         """
         Checks if there are any columns to be used in the value comparison.
@@ -711,7 +732,7 @@ class compare:
         combined.append(80 * "-")
         if self.is_equal():
             combined.append("Tables are exactly equal.")
-            combined.append(f"\nSUMMARY:\n{self.summary().filter(pl.col('Count')!=0)}")
+            combined.append(f"\nSUMMARY:\n{self.equals_summary()}")
             return combined
         if not self.is_schemas_equal():
             combined.append(

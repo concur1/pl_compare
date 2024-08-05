@@ -33,18 +33,16 @@ def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_d
     assert compare_result.is_rows_equal() is True
     assert compare_result.is_values_equal() is True
     assert compare_result.is_equal() is True
-    assert """┌─────────────────────────────┬───────┐
-│ Statistic                   ┆ Count │
-│ ---                         ┆ ---   │
-│ str                         ┆ i64   │
-╞═════════════════════════════╪═══════╡
-│ Columns in base             ┆ 4     │
-│ Columns in compare          ┆ 4     │
-│ Columns in base and compare ┆ 4     │
-│ Rows in base                ┆ 3     │
-│ Rows in compare             ┆ 3     │
-│ Rows in base and compare    ┆ 3     │
-└─────────────────────────────┴───────┘""" in str(
+    assert """┌────────────────────┬───────┐
+│ Statistic          ┆ Count │
+│ ---                ┆ ---   │
+│ str                ┆ i64   │
+╞════════════════════╪═══════╡
+│ Columns in base    ┆ 4     │
+│ Columns in compare ┆ 4     │
+│ Rows in base       ┆ 3     │
+│ Rows in compare    ┆ 3     │
+└────────────────────┴───────┘""" in str(
         compare_result.report()
     )
 
@@ -442,3 +440,24 @@ def test_comparing_list_raises_exception():
     comp = compare(["ID"], base_df, compare_df)
     with pytest.raises(Exception) as e_info:
         comp.is_equal()
+
+
+def test_empty_tables_dont_cause_error():
+    base_df = pl.LazyFrame(
+        {
+            "ID": [],
+            "col1": [],
+            "col2": [],
+        }
+    )
+    compare_df = pl.LazyFrame(
+        {
+            "ID": [],
+            "col1": [],
+            "col2": [],
+        }
+    )
+    comp = compare(["ID"], base_df, compare_df)
+
+    assert comp.is_equal(), "Tables are not equal"
+    comp.report()
