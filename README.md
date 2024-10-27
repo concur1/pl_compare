@@ -2,13 +2,13 @@
 
 [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
-**You will find pl-compare useful if you find yourself writing various SQL/Dataframe operations to**:
-- Understand how well two tables Reconcile [example](#Full-report)
-- Find the schema differences between two tables [example](#Schema-differences-summary-and-details)
-- Find counts or examples of rows that exist in one table but not another [example](#Row-differences-summary-and-details)
-- Find counts or examples of value differences between two tables [example](#Value-differences-summary-and-details)
-- Assert that two tables are exactly equal (such as for an automated test) [example](#Assert-two-frames-are-equal-for-a-test)
-- Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema-row-and-value-differences)
+**pl-compare can be used to**:
+- Report the differences between two tables [example](#Full-report)
+- Find any schema differences between two tables [example](#Schema-differences-summary-and-details)
+- Find rows that exist in one table but not another [example](#Row-differences-summary-and-details)
+- Find column value differences between two tables [example](#Value-differences-summary-and-details)
+- Check/Assert that two tables are exactly equal (such as for an automated test) [example](#Assert-two-frames-are-equal-for-a-test)
+- Chech/Assert that two tables have matching schemas, rows or column values [example](#Return-booleans-to-check-for-schema-row-and-value-differences)
 
 [Click for a jupyter notebook with example usage](https://github.com/concur1/pl_compare/blob/main/pl_compare_demo.ipynb)
 
@@ -23,7 +23,7 @@
 - View differences as a text report
 - Get differences as a Polars LazyFrame or DataFrame
 - Use LazyFrames for larger than memory comparisons
-- Specify the equality calculation that is used to dermine value differences
+- Specify the specify the resolution at which to compare numeric values.
 
 
 ## Installation
