@@ -131,8 +131,8 @@ def get_base_only_rows(
         on=join_columns,
         how="anti",
     )
-    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).unpivot(
-        index=join_columns, on=["status"]
+    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).melt(
+        id_vars=join_columns, value_vars=["status"]
     )
 
 
@@ -144,9 +144,9 @@ def get_compare_only_rows(
     combined_table = compare_df.select(join_columns).join(
         base_df.select(join_columns), on=join_columns, how="anti"
     )
-    return combined_table.select(
-        join_columns + [pl.lit("in compare only").alias("status")]
-    ).unpivot(index=join_columns, on=["status"])
+    return combined_table.select(join_columns + [pl.lit("in compare only").alias("status")]).melt(
+        id_vars=join_columns, value_vars=["status"]
+    )
 
 
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -314,10 +314,10 @@ def get_columns_to_compare(
 
     return {
         col: format
-        for col, format in meta.base_df.collect_schema().items()
+        for col, format in meta.base_df.collect().schema.items()
         if col not in meta.join_columns
         and col not in columns_to_exclude
-        and col in meta.compare_df.collect_schema().names()
+        and col in meta.compare_df.columns
     }
 
 
@@ -356,9 +356,9 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 for col, format in compare_columns.items()
             ]
         )
-        .unpivot(
-            index=meta.join_columns,
-            on=[col for col, format in compare_columns.items()],
+        .melt(
+            id_vars=meta.join_columns,
+            value_vars=[col for col, format in compare_columns.items()],
         )
         .unnest("value")
     )
@@ -381,14 +381,14 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFr
 def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_df_schema = pl.LazyFrame(
         {
-            "column": meta.base_df.collect_schema().keys(),
-            "format": [str(val) for val in meta.base_df.collect_schema().values()],
+            "column": meta.base_df.collect().schema.keys(),
+            "format": [str(val) for val in meta.base_df.collect().schema.values()],
         }
     )
     compare_df_schema = pl.LazyFrame(
         {
-            "column": meta.compare_df.collect_schema().keys(),
-            "format": [str(val) for val in meta.compare_df.collect_schema().values()],
+            "column": meta.compare_df.collect().schema.keys(),
+            "format": [str(val) for val in meta.compare_df.collect().schema.values()],
         }
     )
     return get_column_value_differences_filtered(
@@ -432,23 +432,23 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 "Columns with schema differences",
             ],
             "Count": [
-                len(meta.base_df.collect_schema().names()),
-                len(meta.compare_df.collect_schema().names()),
+                len(meta.base_df.collect().schema.keys()),
+                len(meta.compare_df.collect().schema.keys()),
                 len(
-                    [col for col in meta.compare_df.collect_schema().names() if col in meta.base_df]
+                    [col for col in meta.compare_df.collect().schema.keys() if col in meta.base_df]
                 ),
                 len(
                     [
                         col
-                        for col in meta.base_df.collect_schema().names()
-                        if col not in meta.compare_df.collect_schema().names()
+                        for col in meta.base_df.collect().schema.keys()
+                        if col not in meta.compare_df.collect().schema.keys()
                     ]
                 ),
                 len(
                     [
                         col
-                        for col in meta.compare_df.collect_schema().names()
-                        if col not in meta.base_df.collect_schema().names()
+                        for col in meta.compare_df.collect().schema.keys()
+                        if col not in meta.base_df.collect().schema.keys()
                     ]
                 ),
                 schema_differences,
