@@ -400,7 +400,7 @@ def test_comparing_list_raises_exception():
 
     It has been raised here: https://github.com/pola-rs/polars/issues/17501
 
-    Once this test starts failing (i.e. an exception is no longer raised) the issue should be fixed.
+    We will stick with an older version of polars until this bug is fixed.
 
     The error:
     E       polars.exceptions.InvalidOperationError: 'unpivot' not supported for dtype: struct[3]
@@ -438,8 +438,7 @@ def test_comparing_list_raises_exception():
         }
     )
     comp = compare(["ID"], base_df, compare_df)
-    with pytest.raises(Exception) as e_info:
-        comp.is_equal()
+    comp.is_equal()
 
 
 def test_empty_tables_dont_cause_error():

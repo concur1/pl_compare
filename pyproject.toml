@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pl_compare"
-version = "0.5.2"
+version = "0.6.0"
 description = "A tool to find the differences between two tables."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
@@ -8,7 +8,7 @@ packages = [ {include = "pl_compare"} ]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-polars = "^1.2"
+polars = "0.20.31"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.2.0"
