@@ -9,13 +9,13 @@ layout {
     pane split_direction="vertical" {
         pane name="Helix" edit="."
         pane stacked=true {
-            pane name="run test" command="poetry" {
+            pane name="run test" command="uv" {
                 args "run" "make" "test"
             } 
-            pane name="run check" command="poetry" {
+            pane name="run check" command="uv" {
                 args "run" "make" "check"
             } 
-            pane name="run format" command="poetry" {
+            pane name="run format" command="uv" {
                 args "run" "make" "format"
             } 
             pane
