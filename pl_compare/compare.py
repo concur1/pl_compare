@@ -68,7 +68,7 @@ def set_df_type(
 
 
 def get_uncertain_row_count(df: pl.LazyFrame) -> int:
-    df_solid = convert_to_dataframe(df.select("Count"))
+    df_solid = convert_to_dataframe(df).select(pl.col("Count"))
     if df_solid.height > 0:
         row_count: int = df_solid.item()
         return row_count
@@ -259,7 +259,6 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     value_comparisons = (
         total_value_comparisons.filter(pl.col("Value Differences") == "Total Value Comparisons")
         .select("Count")
-        .collect(streaming=True)
         .item()
     )
     total_differences = final_df.select(
@@ -267,15 +266,15 @@ def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
         pl.sum("Count").alias("Count"),
         (pl.sum("Count") / pl.lit(0.01 * value_comparisons)).alias("Percentage"),
     )
-    columns_compared = final_df.select(pl.len().alias("Count")).collect(streaming=True).item()
+    columns_compared = final_df.select(pl.len().alias("Count")).item()
     value_comparisons_per_column = value_comparisons / columns_compared
     final_df_with_percentages = final_df.with_columns(
         (pl.col("Count") / pl.lit(0.01 * value_comparisons_per_column)).alias("Percentage")
     )
     final_df2 = pl.concat(
         [
-            total_differences.collect(streaming=True),
-            final_df_with_percentages.collect(streaming=True),
+            total_differences,
+            final_df_with_percentages,
         ]
     )
     if meta.hide_empty_stats:
@@ -305,11 +304,7 @@ def get_columns_to_compare(
     columns_to_exclude: List[str] = []
     if not meta.schema_comparison:
         columns_to_exclude.extend(
-            get_schema_comparison(meta)
-            .select(pl.col("column"))
-            .collect(streaming=True)
-            .to_series(0)
-            .to_list()
+            get_schema_comparison(meta).select(pl.col("column")).to_series(0).to_list()
         )
 
     return {
@@ -321,7 +316,7 @@ def get_columns_to_compare(
     }
 
 
-def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
+def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     how_join: Literal["inner", "full"] = "inner"
     coalesce: bool = False
     if meta.schema_comparison:
@@ -343,26 +338,30 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         how_join=how_join,
         validate=meta.validate,
     )
-    melted_df = (
-        combined_tables.with_columns(
-            [
-                pl.struct(
-                    base=f"{col}_base",
-                    compare=f"{col}_compare",
-                    has_diff=f"{col}_has_diff",
-                )
-                .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
-                .alias(col)
-                for col, format in compare_columns.items()
-            ]
-        )
-        .melt(
-            id_vars=meta.join_columns,
-            value_vars=[col for col, format in compare_columns.items()],
-        )
-        .unnest("value")
+    temp = combined_tables.with_columns(
+        [
+            pl.struct(
+                base=f"{col}_base",
+                compare=f"{col}_compare",
+                has_diff=f"{col}_has_diff",
+            )
+            .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
+            .alias(col)
+            .struct.json_encode()
+            for col, format in compare_columns.items()
+        ]
     )
-    return melted_df
+
+    melted_df = temp.melt(
+        id_vars=meta.join_columns,
+        value_vars=[col for col, format in compare_columns.items()],
+    ).with_columns(pl.col("value").str.json_decode().alias("value"))
+    if convert_to_dataframe(melted_df).height > 0:
+        melted_df = melted_df.unnest("value")
+    else:
+        melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
+
+    return melted_df.collect()
 
 
 def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -418,7 +417,6 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
             & (pl.col(f"{meta.base_alias}_format") != pl.col(f"{meta.compare_alias}_format"))
         )
         .select(pl.len().alias("Count"))
-        .collect(streaming=True)
         .item()
     )
     final_df = pl.LazyFrame(

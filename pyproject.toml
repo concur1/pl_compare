@@ -9,9 +9,9 @@ line-length = 100
 authors = [
     {name = "Your Name", email = "you@example.com"},
 ]
-requires-python = ">3.8"
+requires-python = ">3.9"
 dependencies = [
-    "polars==0.20.31",
+    "polars==1.22.0",
 ]
 name = "pl_compare"
 version = "0.6.0"
@@ -29,4 +29,5 @@ dev = [
     "mypy<2.0.0,>=1.9.0",
     "pytest<9.0.0,>=8.1.1",
     "pandas<3.0.0,>=2.0.3",
+    "pdbpp>=0.10.3",
 ]
