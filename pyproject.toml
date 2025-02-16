@@ -14,7 +14,7 @@ dependencies = [
     "polars==1.22.0",
 ]
 name = "pl_compare"
-version = "0.6.0"
+version = "0.7.0"
 description = "A tool to find the differences between two tables."
 readme = "README.md"
 
