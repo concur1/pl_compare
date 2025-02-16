@@ -22,30 +22,6 @@ class ComparisonMetadata:
     validate: Literal["m:m", "m:1", "1:m", "1:1"]
 
 
-def get_duplicates(
-    df: Union[pl.LazyFrame, pl.DataFrame], join_columns: List[str]
-) -> Union[pl.LazyFrame, pl.DataFrame]:
-    ctx = pl.SQLContext(input_table=df)
-    query = f"""SELECT {', '.join(join_columns)}, count(*) AS row_count 
-                FROM input_table GROUP BY {", ".join(join_columns)} 
-                HAVING row_count>1"""
-    return ctx.execute(query)
-
-
-def duplicates_summary(df: Union[pl.LazyFrame, pl.DataFrame]) -> Union[pl.LazyFrame, pl.DataFrame]:
-    ctx = pl.SQLContext(input_table=df)
-    query = """SELECT  (sum(row_count)-count(*)) AS TOTAL_DUPLICATE_ROWS, 
-                   (max(row_count)-1) AS MAXIMUM_DUPLICATES_FOR_AN_ID 
-               FROM input_table"""
-    return ctx.execute(query)
-
-
-def duplicate_examples(df: Union[pl.LazyFrame, pl.DataFrame]) -> Union[pl.LazyFrame, pl.DataFrame]:
-    ctx = pl.SQLContext(input_table=df)
-    query = """SELECT * EXCLUDE(row_count), (row_count-1) AS DUPLICATES FROM input_table"""
-    return ctx.execute(query)
-
-
 def convert_to_dataframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.DataFrame:
     if isinstance(df, pl.LazyFrame):
         df = df.collect()
