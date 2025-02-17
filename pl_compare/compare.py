@@ -107,8 +107,8 @@ def get_base_only_rows(
         on=join_columns,
         how="anti",
     )
-    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).melt(
-        id_vars=join_columns, value_vars=["status"]
+    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).unpivot(
+        index=join_columns, on=["status"]
     )
 
 
@@ -120,9 +120,9 @@ def get_compare_only_rows(
     combined_table = compare_df.select(join_columns).join(
         base_df.select(join_columns), on=join_columns, how="anti"
     )
-    return combined_table.select(join_columns + [pl.lit("in compare only").alias("status")]).melt(
-        id_vars=join_columns, value_vars=["status"]
-    )
+    return combined_table.select(
+        join_columns + [pl.lit("in compare only").alias("status")]
+    ).unpivot(index=join_columns, on=["status"])
 
 
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -288,7 +288,7 @@ def get_columns_to_compare(
         for col, format in meta.base_df.collect().schema.items()
         if col not in meta.join_columns
         and col not in columns_to_exclude
-        and col in meta.compare_df.columns
+        and col in meta.compare_df.collect_schema().names()
     }
 
 
@@ -328,12 +328,31 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         ]
     )
 
-    melted_df = temp.melt(
-        id_vars=meta.join_columns,
-        value_vars=[col for col, format in compare_columns.items()],
-    ).with_columns(pl.col("value").str.json_decode().alias("value"))
+    dtype = pl.Struct(
+        [
+            pl.Field(meta.base_alias, pl.Utf8),
+            pl.Field(meta.compare_alias, pl.Utf8),
+            pl.Field("has_diff", pl.Boolean),
+        ]
+    )
+    melted_df = temp.unpivot(
+        index=meta.join_columns,
+        on=[col for col, format in compare_columns.items()],
+    )
+    # melted_df = melted_df.with_columns(pl.col("value").str.json_decode(dtype).alias("value"))
+
     if convert_to_dataframe(melted_df).height > 0:
-        melted_df = melted_df.unnest("value")
+        melted_df = (
+            melted_df.with_columns(
+                pl.col("value").str.json_path_match(f"$.{meta.base_alias}").alias(meta.base_alias),
+                pl.col("value")
+                .str.json_path_match(f"$.{meta.compare_alias}")
+                .alias(meta.compare_alias),
+                pl.col("value").str.json_path_match("$.has_diff").alias("has_diff"),
+            )
+            .drop(["value"])
+            .with_columns(pl.col("has_diff").replace_strict({"false": False, "true": True}))
+        )
     else:
         melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
 

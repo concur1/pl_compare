@@ -149,7 +149,7 @@ def test_expected_values_returned_values_summary(base_df, compare_df):
 def test_expected_values_returned_value_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
-        {"ID": ["1234567"], "variable": ["Example1"], "base": [6], "compare": [2]}
+        {"ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
     )
     assert_frame_equal(compare_result.values_sample(), expected_value_differences)
 
@@ -460,3 +460,23 @@ def test_empty_tables_dont_cause_error():
 
     assert comp.is_equal(), "Tables are not equal"
     comp.report()
+
+
+def test_large_number_of_rows():
+    row_count = 2000
+    base_df = pl.LazyFrame(
+        {
+            "ID": [f"{i}" for i in range(row_count)],
+            "Example1": [i for i in range(row_count)],
+            "Example2": [f"base eg {i}" for i in range(row_count)],
+        }
+    )
+    compare_df = pl.LazyFrame(
+        {
+            "ID": [f"{i}" for i in range(row_count)],
+            "Example1": [i for i in range(row_count)],
+            "Example2": [f"compare eg {i}" for i in range(row_count)],
+        }
+    )
+    comp = compare(["ID"], base_df, compare_df)
+    comp.summary()
