@@ -27,6 +27,84 @@ def compare_df():
     )
 
 
+def test_report_with_aliases(base_df, compare_df):
+    compare_result = compare(["ID"], base_df, compare_df, base_alias="test", compare_alias="other")
+    assert compare_result.is_schemas_equal() is False
+    assert compare_result.is_rows_equal() is False
+    assert compare_result.is_values_equal() is False
+    assert compare_result.is_equal() is False
+    assert """SCHEMA DIFFERENCES:
+shape: (6, 2)
+┌─────────────────────────────────┬───────┐
+│ Statistic                       ┆ Count │
+│ ---                             ┆ ---   │
+│ str                             ┆ i64   │
+╞═════════════════════════════════╪═══════╡
+│ Columns in test                 ┆ 3     │
+│ Columns in other                ┆ 4     │
+│ Columns in test and other       ┆ 3     │
+│ Columns only in test            ┆ 0     │
+│ Columns only in other           ┆ 1     │
+│ Columns with schema difference… ┆ 1     │
+└─────────────────────────────────┴───────┘
+shape: (2, 3)
+┌──────────┬─────────────┬──────────────┐
+│ column   ┆ test_format ┆ other_format │
+│ ---      ┆ ---         ┆ ---          │
+│ str      ┆ str         ┆ str          │
+╞══════════╪═════════════╪══════════════╡
+│ Example2 ┆ String      ┆ Int64        │
+│ Example3 ┆ null        ┆ Int64        │
+└──────────┴─────────────┴──────────────┘""" in str(
+        compare_result.report()
+    )
+
+    assert """ROW DIFFERENCES:
+shape: (5, 2)
+┌────────────────────────┬───────┐
+│ Statistic              ┆ Count │
+│ ---                    ┆ ---   │
+│ str                    ┆ i64   │
+╞════════════════════════╪═══════╡
+│ Rows in test           ┆ 3     │
+│ Rows in other          ┆ 3     │
+│ Rows only in test      ┆ 1     │
+│ Rows only in other     ┆ 1     │
+│ Rows in test and other ┆ 2     │
+└────────────────────────┴───────┘
+shape: (2, 3)
+┌────────────┬──────────┬───────────────┐
+│ ID         ┆ variable ┆ value         │
+│ ---        ┆ ---      ┆ ---           │
+│ str        ┆ str      ┆ str           │
+╞════════════╪══════════╪═══════════════╡
+│ 12345678   ┆ status   ┆ in test only  │
+│ 1234567810 ┆ status   ┆ in other only │
+└────────────┴──────────┴───────────────┘""" in str(
+        compare_result.report()
+    )
+    assert """VALUE DIFFERENCES:
+shape: (2, 3)
+┌─────────────────────────┬───────┬────────────┐
+│ Value Differences       ┆ Count ┆ Percentage │
+│ ---                     ┆ ---   ┆ ---        │
+│ str                     ┆ i64   ┆ f64        │
+╞═════════════════════════╪═══════╪════════════╡
+│ Total Value Differences ┆ 1     ┆ 50.0       │
+│ Example1                ┆ 1     ┆ 50.0       │
+└─────────────────────────┴───────┴────────────┘
+shape: (1, 4)
+┌─────────┬──────────┬──────┬───────┐
+│ ID      ┆ variable ┆ test ┆ other │
+│ ---     ┆ ---      ┆ ---  ┆ ---   │
+│ str     ┆ str      ┆ str  ┆ str   │
+╞═════════╪══════════╪══════╪═══════╡
+│ 1234567 ┆ Example1 ┆ 6    ┆ 2     │
+└─────────┴──────────┴──────┴───────┘""" in str(
+        compare_result.report()
+    )
+
+
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
     compare_result = compare(None, base_df, base_df)
     assert compare_result.is_schemas_equal() is True

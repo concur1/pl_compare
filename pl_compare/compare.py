@@ -82,11 +82,11 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     final_df = (
         pl.DataFrame(
             {
-                "Rows in base": [shared_rows + base_only_rows],
-                "Rows in compare": [shared_rows + compare_only_rows],
-                "Rows only in base": [base_only_rows],
-                "Rows only in compare": [compare_only_rows],
-                "Rows in base and compare": [shared_rows],
+                f"Rows in {meta.base_alias}": [shared_rows + base_only_rows],
+                f"Rows in {meta.compare_alias}": [shared_rows + compare_only_rows],
+                f"Rows only in {meta.base_alias}": [base_only_rows],
+                f"Rows only in {meta.compare_alias}": [compare_only_rows],
+                f"Rows in {meta.base_alias} and {meta.compare_alias}": [shared_rows],
             }
         )
         .transpose(include_header=True, column_names=["Col Differences"])
@@ -97,41 +97,29 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     return final_df
 
 
-def get_base_only_rows(
-    join_columns: List[str],
-    base_df: pl.LazyFrame,
-    compare_df: pl.LazyFrame,
-) -> pl.LazyFrame:
-    combined_table = base_df.select(join_columns).join(
-        compare_df.select(join_columns),
-        on=join_columns,
+def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
+    combined_table = meta.base_df.select(meta.join_columns).join(
+        meta.compare_df.select(meta.join_columns),
+        on=meta.join_columns,
         how="anti",
     )
-    return combined_table.select(join_columns + [pl.lit("in base only").alias("status")]).unpivot(
-        index=join_columns, on=["status"]
-    )
+    return combined_table.select(
+        meta.join_columns + [pl.lit(f"in {meta.base_alias} only").alias("status")]
+    ).unpivot(index=meta.join_columns, on=["status"])
 
 
-def get_compare_only_rows(
-    join_columns: List[str],
-    base_df: pl.LazyFrame,
-    compare_df: pl.LazyFrame,
-) -> pl.LazyFrame:
-    combined_table = compare_df.select(join_columns).join(
-        base_df.select(join_columns), on=join_columns, how="anti"
+def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
+    combined_table = meta.compare_df.select(meta.join_columns).join(
+        meta.base_df.select(meta.join_columns), on=meta.join_columns, how="anti"
     )
     return combined_table.select(
-        join_columns + [pl.lit("in compare only").alias("status")]
-    ).unpivot(index=join_columns, on=["status"])
+        meta.join_columns + [pl.lit(f"in {meta.compare_alias} only").alias("status")]
+    ).unpivot(index=meta.join_columns, on=["status"])
 
 
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
-    base_only_rows = get_base_only_rows(
-        meta.join_columns, meta.base_df, meta.compare_df
-    ).with_row_index()
-    compare_only_rows = get_compare_only_rows(
-        meta.join_columns, meta.base_df, meta.compare_df
-    ).with_row_index()
+    base_only_rows = get_base_only_rows(meta).with_row_index()
+    compare_only_rows = get_compare_only_rows(meta).with_row_index()
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
@@ -417,12 +405,12 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     final_df = pl.LazyFrame(
         {
             "Statistic": [
-                "Columns in base",
-                "Columns in compare",
-                "Columns in base and compare",
-                "Columns only in base",
-                "Columns only in compare",
-                "Columns with schema differences",
+                f"Columns in {meta.base_alias}",
+                f"Columns in {meta.compare_alias}",
+                f"Columns in {meta.base_alias} and {meta.compare_alias}",
+                f"Columns only in {meta.base_alias}",
+                f"Columns only in {meta.compare_alias}",
+                f"Columns with schema differences",
             ],
             "Count": [
                 len(meta.base_df.collect().schema.keys()),
