@@ -347,7 +347,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     return melted_df.collect()
 
 
-def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFrame:
+def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFrame:
     df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
@@ -360,7 +360,7 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.LazyFr
     return filtered_df
 
 
-def get_schema_comparison(meta: ComparisonMetadata) -> pl.LazyFrame:
+def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
     base_df_schema = pl.LazyFrame(
         {
             "column": meta.base_df.collect().schema.keys(),
