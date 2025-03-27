@@ -67,9 +67,9 @@
       # This example is only using x86_64-linux
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
-      # Use Python 3.12 from nixpkgs
       python = pkgs.python313;
       pip = pkgs.python313Packages.pip;
+      setuptools = pkgs.python313Packages.setuptools;
 
       # Construct package set
       pythonSet =
@@ -110,6 +110,7 @@
           packages = [
             python
             pip
+            setuptools
             pkgs.uv
             pkgs.ninja
             pkgs.meson
