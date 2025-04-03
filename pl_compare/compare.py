@@ -312,13 +312,6 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         ]
     )
 
-    dtype = pl.Struct(
-        [
-            pl.Field(meta.base_alias, pl.Utf8),
-            pl.Field(meta.compare_alias, pl.Utf8),
-            pl.Field("has_diff", pl.Boolean),
-        ]
-    )
     melted_df = temp.unpivot(
         index=meta.join_columns,
         on=[col for col, format in compare_columns.items()],
@@ -406,7 +399,7 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 f"Columns in {meta.base_alias} and {meta.compare_alias}",
                 f"Columns only in {meta.base_alias}",
                 f"Columns only in {meta.compare_alias}",
-                f"Columns with schema differences",
+                "Columns with schema differences",
             ],
             "Count": [
                 len(meta.base_df.collect().schema.keys()),

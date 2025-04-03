@@ -463,7 +463,6 @@ def test_output_when_there_are_row_differences_but_no_columns_to_compare_exist()
     assert not comp.is_rows_equal()
     assert comp.is_values_equal()
     assert comp.is_schemas_equal()
-    breakpoint()
     assert """--------------------------------------------------------------------------------
 COMPARISON REPORT
 --------------------------------------------------------------------------------
