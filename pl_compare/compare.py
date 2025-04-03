@@ -287,10 +287,6 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         how_join = "full"
         coalesce = True
     compare_columns = get_columns_to_compare(meta)
-    if len(compare_columns) == 0:
-        raise Exception(
-            "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
-        )
     combined_tables = get_combined_tables(
         meta.join_columns,
         meta.base_df,
