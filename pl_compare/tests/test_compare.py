@@ -440,6 +440,21 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
 
 
+def test_for_single_column_table_columns():
+    base_df = pl.DataFrame(
+        {
+            "ID": [123456, 1234567, 12345678],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": [123456, 1234567, 12345678],
+        },
+    )
+    comp = compare(["ID"], base_df, compare_df)
+    assert comp.is_equal()
+
+
 def test_output_when_there_are_row_differences_but_no_columns_to_compare_exist():
     base_df = pl.DataFrame(
         {
