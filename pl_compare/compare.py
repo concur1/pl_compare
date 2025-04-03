@@ -287,6 +287,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         how_join = "full"
         coalesce = True
     compare_columns = get_columns_to_compare(meta)
+    # if len(compare_columns) == 0:
     combined_tables = get_combined_tables(
         meta.join_columns,
         meta.base_df,
@@ -318,7 +319,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     )
     # melted_df = melted_df.with_columns(pl.col("value").str.json_decode(dtype).alias("value"))
 
-    if convert_to_dataframe(melted_df).height > 0:
+    if convert_to_dataframe(melted_df).height > 0 and len(compare_columns) > 0:
         melted_df = (
             melted_df.with_columns(
                 pl.col("value").str.json_path_match(f"$.{meta.base_alias}").alias(meta.base_alias),
