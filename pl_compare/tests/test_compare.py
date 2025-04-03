@@ -440,7 +440,7 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
 
 
-def test_error_raised_when_no_columns_to_compare_exist():
+def test_output_when_there_are_row_differences_but_no_columns_to_compare_exist():
     base_df = pl.DataFrame(
         {
             "ID": ["123456", "123456", "1234567", "12345678"],
@@ -458,18 +458,42 @@ def test_error_raised_when_no_columns_to_compare_exist():
         },
     )
 
-    with pytest.raises(Exception) as exc_info:
-        compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_summary()
-    assert (
-        exc_info.value.args[0]
-        == "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
-    )
+    comp = compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1")
+    assert not comp.is_equal()
+    assert not comp.is_rows_equal()
+    assert comp.is_values_equal()
+    assert comp.is_schemas_equal()
+    assert """--------------------------------------------------------------------------------
+COMPARISON REPORT
+--------------------------------------------------------------------------------
+No Schema differences found.
+--------------------------------------------------------------------------------
 
-    with pytest.raises(Exception) as exc_info:
-        compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_sample()
-    assert (
-        exc_info.value.args[0]
-        == "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
+ROW DIFFERENCES:
+shape: (5, 2)
+┌──────────────────────────┬───────┐
+│ Statistic                ┆ Count │
+│ ---                      ┆ ---   │
+│ str                      ┆ i64   │
+╞══════════════════════════╪═══════╡
+│ Rows in base             ┆ 4     │
+│ Rows in compare          ┆ 3     │
+│ Rows only in base        ┆ 2     │
+│ Rows only in compare     ┆ 1     │
+│ Rows in base and compare ┆ 2     │
+└──────────────────────────┴───────┘
+shape: (3, 6)
+┌────────────┬────────────┬────────────┬────────────┬──────────┬─────────────────┐
+│ ID         ┆ ID2        ┆ ID3        ┆ ID4        ┆ variable ┆ value           │
+│ ---        ┆ ---        ┆ ---        ┆ ---        ┆ ---      ┆ ---             │
+│ str        ┆ str        ┆ str        ┆ str        ┆ str      ┆ str             │
+╞════════════╪════════════╪════════════╪════════════╪══════════╪═════════════════╡
+│ 123456     ┆ 123457     ┆ 123457     ┆ 123457     ┆ status   ┆ in base only    │
+│ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ status   ┆ in compare only │
+│ 12345678   ┆ 12345678   ┆ 12345678   ┆ 12345678   ┆ status   ┆ in base only    │
+└────────────┴────────────┴────────────┴────────────┴──────────┴─────────────────┘
+""" in str(
+        comp.report()
     )
 
 
