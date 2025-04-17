@@ -14,4 +14,5 @@ jobs:
 
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python pin 3.10
+      - run: uv build
       - run: uv publish
