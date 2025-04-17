@@ -16,4 +16,4 @@ jobs:
       - run: uv python pin 3.10
       - run: uv build
       - run: ls -lah dist
-      - run: uv publish dist/ --token {{ secrets.PYPI_API_TOKEN }}
+      - run: uv publish
