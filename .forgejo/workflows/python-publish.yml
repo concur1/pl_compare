@@ -1,17 +1,17 @@
-on: [push]
+name: Upload Python Package
+
+on:
+  release:
+    types: [published]
+
 jobs:
-  test:
+  deploy:
+
     runs-on: codeberg-tiny
 
     steps:
-      - run: echo "hello"
       - uses:  https://code.forgejo.org/actions/checkout@v3
+
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python pin 3.10
-
-      - name: Install dependencies
-        run: uv sync 
-
-      - name: Run checks
-        run: |
-          uv run make check
+      - run: uv publish
