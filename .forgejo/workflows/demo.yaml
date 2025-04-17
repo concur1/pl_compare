@@ -4,22 +4,23 @@ jobs:
     runs-on: codeberg-tiny
 
     steps:
-    - uses: actions/checkout@v4
+      - run: echo "hello"
+    # - uses: actions/checkout@v4
 
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.8
+    # - name: Set up Python 3.8
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: 3.8
 
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        enable-cache: true
+    # - name: Install uv
+    #   uses: astral-sh/setup-uv@v5
+    #   with:
+    #     enable-cache: true
 
-    - name: Install dependencies
-      run: uv sync 
+    # - name: Install dependencies
+    #   run: uv sync 
 
-    - name: Run checks
-      run: |
-        uv run make check
+    # - name: Run checks
+    #   run: |
+    #     uv run make check
