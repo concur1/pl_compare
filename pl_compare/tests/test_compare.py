@@ -27,6 +27,84 @@ def compare_df():
     )
 
 
+def test_report_with_aliases(base_df, compare_df):
+    compare_result = compare(["ID"], base_df, compare_df, base_alias="test", compare_alias="other")
+    assert compare_result.is_schemas_equal() is False
+    assert compare_result.is_rows_equal() is False
+    assert compare_result.is_values_equal() is False
+    assert compare_result.is_equal() is False
+    assert """SCHEMA DIFFERENCES:
+shape: (6, 2)
+┌─────────────────────────────────┬───────┐
+│ Statistic                       ┆ Count │
+│ ---                             ┆ ---   │
+│ str                             ┆ i64   │
+╞═════════════════════════════════╪═══════╡
+│ Columns in test                 ┆ 3     │
+│ Columns in other                ┆ 4     │
+│ Columns in test and other       ┆ 3     │
+│ Columns only in test            ┆ 0     │
+│ Columns only in other           ┆ 1     │
+│ Columns with schema difference… ┆ 1     │
+└─────────────────────────────────┴───────┘
+shape: (2, 3)
+┌──────────┬─────────────┬──────────────┐
+│ column   ┆ test_format ┆ other_format │
+│ ---      ┆ ---         ┆ ---          │
+│ str      ┆ str         ┆ str          │
+╞══════════╪═════════════╪══════════════╡
+│ Example2 ┆ String      ┆ Int64        │
+│ Example3 ┆ null        ┆ Int64        │
+└──────────┴─────────────┴──────────────┘""" in str(
+        compare_result.report()
+    )
+
+    assert """ROW DIFFERENCES:
+shape: (5, 2)
+┌────────────────────────┬───────┐
+│ Statistic              ┆ Count │
+│ ---                    ┆ ---   │
+│ str                    ┆ i64   │
+╞════════════════════════╪═══════╡
+│ Rows in test           ┆ 3     │
+│ Rows in other          ┆ 3     │
+│ Rows only in test      ┆ 1     │
+│ Rows only in other     ┆ 1     │
+│ Rows in test and other ┆ 2     │
+└────────────────────────┴───────┘
+shape: (2, 3)
+┌────────────┬──────────┬───────────────┐
+│ ID         ┆ variable ┆ value         │
+│ ---        ┆ ---      ┆ ---           │
+│ str        ┆ str      ┆ str           │
+╞════════════╪══════════╪═══════════════╡
+│ 12345678   ┆ status   ┆ in test only  │
+│ 1234567810 ┆ status   ┆ in other only │
+└────────────┴──────────┴───────────────┘""" in str(
+        compare_result.report()
+    )
+    assert """VALUE DIFFERENCES:
+shape: (2, 3)
+┌─────────────────────────┬───────┬────────────┐
+│ Value Differences       ┆ Count ┆ Percentage │
+│ ---                     ┆ ---   ┆ ---        │
+│ str                     ┆ i64   ┆ f64        │
+╞═════════════════════════╪═══════╪════════════╡
+│ Total Value Differences ┆ 1     ┆ 50.0       │
+│ Example1                ┆ 1     ┆ 50.0       │
+└─────────────────────────┴───────┴────────────┘
+shape: (1, 4)
+┌─────────┬──────────┬──────┬───────┐
+│ ID      ┆ variable ┆ test ┆ other │
+│ ---     ┆ ---      ┆ ---  ┆ ---   │
+│ str     ┆ str      ┆ str  ┆ str   │
+╞═════════╪══════════╪══════╪═══════╡
+│ 1234567 ┆ Example1 ┆ 6    ┆ 2     │
+└─────────┴──────────┴──────┴───────┘""" in str(
+        compare_result.report()
+    )
+
+
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
     compare_result = compare(None, base_df, base_df)
     assert compare_result.is_schemas_equal() is True
@@ -362,7 +440,22 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
 
 
-def test_error_raised_when_no_columns_to_compare_exist():
+def test_for_single_column_table_columns():
+    base_df = pl.DataFrame(
+        {
+            "ID": [123456, 1234567, 12345678],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": [123456, 1234567, 12345678],
+        },
+    )
+    comp = compare(["ID"], base_df, compare_df)
+    assert comp.is_equal()
+
+
+def test_output_when_there_are_row_differences_but_no_columns_to_compare_exist():
     base_df = pl.DataFrame(
         {
             "ID": ["123456", "123456", "1234567", "12345678"],
@@ -380,18 +473,42 @@ def test_error_raised_when_no_columns_to_compare_exist():
         },
     )
 
-    with pytest.raises(Exception) as exc_info:
-        compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_summary()
-    assert (
-        exc_info.value.args[0]
-        == "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
-    )
+    comp = compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1")
+    assert not comp.is_equal()
+    assert not comp.is_rows_equal()
+    assert comp.is_values_equal()
+    assert comp.is_schemas_equal()
+    assert """--------------------------------------------------------------------------------
+COMPARISON REPORT
+--------------------------------------------------------------------------------
+No Schema differences found.
+--------------------------------------------------------------------------------
 
-    with pytest.raises(Exception) as exc_info:
-        compare(["ID", "ID2", "ID3", "ID4"], base_df, compare_df, validate="1:1").values_sample()
-    assert (
-        exc_info.value.args[0]
-        == "There are no columns to compare the value of. Please check the columns in the base and compare datasets as well as the join columns that have been supplied."
+ROW DIFFERENCES:
+shape: (5, 2)
+┌──────────────────────────┬───────┐
+│ Statistic                ┆ Count │
+│ ---                      ┆ ---   │
+│ str                      ┆ i64   │
+╞══════════════════════════╪═══════╡
+│ Rows in base             ┆ 4     │
+│ Rows in compare          ┆ 3     │
+│ Rows only in base        ┆ 2     │
+│ Rows only in compare     ┆ 1     │
+│ Rows in base and compare ┆ 2     │
+└──────────────────────────┴───────┘
+shape: (3, 6)
+┌────────────┬────────────┬────────────┬────────────┬──────────┬─────────────────┐
+│ ID         ┆ ID2        ┆ ID3        ┆ ID4        ┆ variable ┆ value           │
+│ ---        ┆ ---        ┆ ---        ┆ ---        ┆ ---      ┆ ---             │
+│ str        ┆ str        ┆ str        ┆ str        ┆ str      ┆ str             │
+╞════════════╪════════════╪════════════╪════════════╪══════════╪═════════════════╡
+│ 123456     ┆ 123457     ┆ 123457     ┆ 123457     ┆ status   ┆ in base only    │
+│ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ status   ┆ in compare only │
+│ 12345678   ┆ 12345678   ┆ 12345678   ┆ 12345678   ┆ status   ┆ in base only    │
+└────────────┴────────────┴────────────┴────────────┴──────────┴─────────────────┘
+""" in str(
+        comp.report()
     )
 
 
