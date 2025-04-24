@@ -1,0 +1,15 @@
+on:
+  push:
+    branches: [ main ]
+jobs:
+  push_to_codeberg:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+        - uses: yesolutions/mirror-action@master
+          with:
+            REMOTE: 'ssh://git@codeberg.org/concur1/pl-compare.git'
+            GIT_SSH_PRIVATE_KEY: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
+            GIT_SSH_KNOWN_HOSTS: ${{ secrets.GIT_SSH_KNOWN_HOSTS }}
