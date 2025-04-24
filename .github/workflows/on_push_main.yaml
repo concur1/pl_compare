@@ -12,4 +12,4 @@ jobs:
           with:
             REMOTE: 'ssh://git@codeberg.org/concur1/pl-compare.git'
             GIT_SSH_PRIVATE_KEY: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
-            GIT_SSH_KNOWN_HOSTS: ${{ secrets.GIT_SSH_KNOWN_HOSTS }}
+            GIT_SSH_NO_VERIFY_HOST: "true"
