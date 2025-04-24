@@ -456,8 +456,6 @@ def test_for_single_column_table_columns():
     assert comp.is_equal()
 
 
-=======
->>>>>>> 9404618 (Updated so that an error is no longer raised when comparing tables with no non id columnds.)
 def test_output_when_there_are_row_differences_but_no_columns_to_compare_exist():
     base_df = pl.DataFrame(
         {
@@ -481,10 +479,6 @@ def test_output_when_there_are_row_differences_but_no_columns_to_compare_exist()
     assert not comp.is_rows_equal()
     assert comp.is_values_equal()
     assert comp.is_schemas_equal()
-<<<<<<< HEAD
-=======
-    breakpoint()
->>>>>>> 9404618 (Updated so that an error is no longer raised when comparing tables with no non id columnds.)
     assert """--------------------------------------------------------------------------------
 COMPARISON REPORT
 --------------------------------------------------------------------------------
