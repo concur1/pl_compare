@@ -441,6 +441,9 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ac4527c (Updated with a hotfix to for when there are no compare columns.)
 def test_for_single_column_table_columns():
     base_df = pl.DataFrame(
         {
