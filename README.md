@@ -1,6 +1,6 @@
 # pl_compare: Compare and find the differences between two Polars DataFrames. 
 
-[Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
+[Codeberg](https://codeberg.org/concur1/pl-compare) - [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
 **pl-compare can be used to**:
 - Report the differences between two tables [example](#Full-report)
