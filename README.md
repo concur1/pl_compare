@@ -2,6 +2,7 @@
 
 [Codeberg](https://codeberg.org/concur1/pl-compare) - [Github](https://github.com/concur1/pl_compare) - [PyPi Page](https://pypi.org/project/pl-compare/)
 
+
 **pl-compare can be used to**:
 - Report the differences between two tables [example](#Full-report)
 - Find any schema differences between two tables [example](#Schema-differences-summary-and-details)
