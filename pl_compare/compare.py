@@ -481,7 +481,7 @@ class compare:
             streaming (bool): Whether the comparison will return LazyFrames (defaults to False).
             resolution (Union[float, None]): The resolution for comparison. Applies to numeric values only. If the difference between two values is greater than the resolution then the values are considered to be unequal.
             equality_check (Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]): The function to check equality.
-            sample_limit (int): The number of rows to sample from the comparison. This only applies to methods that return a sample.
+            sample_limit (Optional[int]): The number of rows to sample from the comparison. This only applies to methods that return a sample.
             base_alias (str): The alias for the base dataframe. This will be displayed in the final result.
             compare_alias (str): The alias for the dataframe to be compared. This will be displayed in the final result.
             hide_empty_stats (bool): Whether to hide empty statistics. Comparison statistics where there are zero differences will be excluded from the result.
