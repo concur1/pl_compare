@@ -288,7 +288,6 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         how_join = "full"
         coalesce = True
     compare_columns = get_columns_to_compare(meta)
-    # if len(compare_columns) == 0:
     combined_tables = get_combined_tables(
         meta.join_columns,
         meta.base_df,

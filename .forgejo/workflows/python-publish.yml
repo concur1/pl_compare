@@ -1,0 +1,18 @@
+name: Upload Python Package
+
+on: 
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+
+    runs-on: codeberg-tiny
+
+    steps:
+      - uses:  https://code.forgejo.org/actions/checkout@v3
+
+      - run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - run: uv python pin 3.10
+      - run: uv build
+      - run: uv publish dist/* --token ${{ secrets.PYPI_API_TOKEN }}
