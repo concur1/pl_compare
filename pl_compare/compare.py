@@ -287,7 +287,10 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         how_join = "full"
         coalesce = True
     compare_columns = get_columns_to_compare(meta)
+<<<<<<< HEAD
     # if len(compare_columns) == 0:
+=======
+>>>>>>> 9404618 (Updated so that an error is no longer raised when comparing tables with no non id columnds.)
     combined_tables = get_combined_tables(
         meta.join_columns,
         meta.base_df,
