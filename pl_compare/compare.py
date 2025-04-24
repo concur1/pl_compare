@@ -1,7 +1,8 @@
+from dataclasses import dataclass
+from typing import Literal, Callable, List, Union, Dict, Optional
+
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
-from typing import Literal, Callable, List, Union, Dict
-from dataclasses import dataclass
 
 
 @dataclass
@@ -14,7 +15,7 @@ class ComparisonMetadata:
     streaming: bool
     resolution: Union[float, None]
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]
-    sample_limit: Union[int, None]
+    sample_limit: Optional[int]
     base_alias: str
     compare_alias: str
     schema_comparison: bool
@@ -464,7 +465,7 @@ class compare:
         equality_check: Union[
             Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None
         ] = None,
-        sample_limit: int = 5,
+        sample_limit: Optional[int] = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
@@ -480,7 +481,7 @@ class compare:
             streaming (bool): Whether the comparison will return LazyFrames (defaults to False).
             resolution (Union[float, None]): The resolution for comparison. Applies to numeric values only. If the difference between two values is greater than the resolution then the values are considered to be unequal.
             equality_check (Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]): The function to check equality.
-            sample_limit (int): The number of rows to sample from the comparison. This only applies to methods that return a sample.
+            sample_limit (Optional[int]): The number of rows to sample from the comparison. This only applies to methods that return a sample.
             base_alias (str): The alias for the base dataframe. This will be displayed in the final result.
             compare_alias (str): The alias for the dataframe to be compared. This will be displayed in the final result.
             hide_empty_stats (bool): Whether to hide empty statistics. Comparison statistics where there are zero differences will be excluded from the result.
