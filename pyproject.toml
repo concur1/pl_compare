@@ -14,11 +14,7 @@ dependencies = [
     "polars>=1.24.0",
 ]
 name = "pl_compare"
-<<<<<<< HEAD
 version = "0.9.2"
-=======
-version = "0.9.1"
->>>>>>> ac4527c (Updated with a hotfix to for when there are no compare columns.)
 description = "A tool to find the differences between two tables."
 readme = "README.md"
 
