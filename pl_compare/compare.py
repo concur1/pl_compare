@@ -1,7 +1,8 @@
+from dataclasses import dataclass
+from typing import Literal, Callable, List, Union, Dict, Optional
+
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
-from typing import Literal, Callable, List, Union, Dict
-from dataclasses import dataclass
 
 
 @dataclass
@@ -14,7 +15,7 @@ class ComparisonMetadata:
     streaming: bool
     resolution: Union[float, None]
     equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None]
-    sample_limit: Union[int, None]
+    sample_limit: Optional[int]
     base_alias: str
     compare_alias: str
     schema_comparison: bool
@@ -464,7 +465,7 @@ class compare:
         equality_check: Union[
             Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None
         ] = None,
-        sample_limit: int = 5,
+        sample_limit: Optional[int] = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
         hide_empty_stats: bool = False,
