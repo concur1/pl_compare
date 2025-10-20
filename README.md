@@ -23,7 +23,7 @@
 - View differences as a text report
 - Get differences as a Polars LazyFrame or DataFrame
 - Use LazyFrames for larger than memory comparisons
-- Specify the specify the resolution at which to compare numeric values.
+- Specify the resolution at which to compare numeric values.
 
 
 ## Installation
