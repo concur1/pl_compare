@@ -105,8 +105,9 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
         how="anti",
     )
     return combined_table.select(
-        meta.join_columns + [pl.lit(f"in {meta.base_alias} only").alias("status")]
-    ).unpivot(index=meta.join_columns, on=["status"])
+        meta.join_columns
+        + [pl.lit("status").alias("variable"), pl.lit(f"in {meta.base_alias} only").alias("value")]
+    )
 
 
 def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -114,8 +115,12 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
         meta.base_df.select(meta.join_columns), on=meta.join_columns, how="anti"
     )
     return combined_table.select(
-        meta.join_columns + [pl.lit(f"in {meta.compare_alias} only").alias("status")]
-    ).unpivot(index=meta.join_columns, on=["status"])
+        meta.join_columns
+        + [
+            pl.lit("status").alias("variable"),
+            pl.lit(f"in {meta.compare_alias} only").alias("value"),
+        ]
+    )
 
 
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
