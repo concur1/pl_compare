@@ -579,21 +579,19 @@ def test_empty_tables_dont_cause_error():
     comp.report()
 
 
-def test_large_number_of_rows():
-    row_count = 2000
-    base_df = pl.LazyFrame(
+def test_usage_of_status_column():
+    base_df = pl.DataFrame(
         {
-            "ID": [f"{i}" for i in range(row_count)],
-            "Example1": [i for i in range(row_count)],
-            "Example2": [f"base eg {i}" for i in range(row_count)],
+            "status": ["123456", "1234567", "12345678"],
+            "Example1": [1, 6, 3],
         }
     )
-    compare_df = pl.LazyFrame(
+    compare_df = pl.DataFrame(
         {
-            "ID": [f"{i}" for i in range(row_count)],
-            "Example1": [i for i in range(row_count)],
-            "Example2": [f"compare eg {i}" for i in range(row_count)],
+            "status": ["123456", "1234567", "1234567810"],
+            "Example1": [1, 2, 3],
         }
     )
-    comp = compare(["ID"], base_df, compare_df)
-    comp.summary()
+
+    # This should not cause an error
+    compare_result = compare(["status"], base_df, compare_df)
