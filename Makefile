@@ -7,9 +7,9 @@ help: ## Print help for make commands
 
 .PHONY: format
 format: ## Formats the files with ruff and black
-	-ruff --fix $(SRCPATH)
+	-ruff check --fix $(SRCPATH)
 	-black $(SRCPATH)
-	-ruff $(SRCPATH)
+	-ruff check $(SRCPATH)
 	-black --check $(SRCPATH)
 
 .PHONY: check
