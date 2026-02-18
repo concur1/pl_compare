@@ -18,6 +18,8 @@ class ComparisonMetadata:
     sample_limit: Optional[int]
     base_alias: str
     compare_alias: str
+    value_alias: str
+    variable_alias: str
     schema_comparison: bool
     hide_empty_stats: bool
     validate: Literal["m:m", "m:1", "1:m", "1:1"]
@@ -106,7 +108,10 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     )
     return combined_table.select(
         meta.join_columns
-        + [pl.lit("status").alias("variable"), pl.lit(f"in {meta.base_alias} only").alias("value")]
+        + [
+            pl.lit("status").alias(meta.variable_alias),
+            pl.lit(f"in {meta.base_alias} only").alias(meta.value_alias),
+        ]
     )
 
 
@@ -117,8 +122,8 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias("variable"),
-            pl.lit(f"in {meta.compare_alias} only").alias("value"),
+            pl.lit("status").alias(meta.variable_alias),
+            pl.lit(f"in {meta.compare_alias} only").alias(meta.value_alias),
         ]
     )
 
@@ -216,10 +221,10 @@ def get_combined_tables(
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     value_differences = get_column_value_differences(meta)
     final_df = (
-        value_differences.group_by(["variable"])
+        value_differences.group_by([meta.variable_alias])
         .agg(pl.sum("has_diff"))
-        .sort("variable", descending=False)
-        .rename({"variable": "Value Differences", "has_diff": "Count"})
+        .sort(meta.variable_alias, descending=False)
+        .rename({meta.variable_alias: "Value Differences", "has_diff": "Count"})
     )
     total_value_comparisons = value_differences.select(
         pl.lit("Total Value Comparisons").alias("Value Differences"),
@@ -321,19 +326,22 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     melted_df = temp.unpivot(
         index=meta.join_columns,
         on=[col for col, format in compare_columns.items()],
+        variable_name=meta.variable_alias,
+        value_name=meta.value_alias,
     )
-    # melted_df = melted_df.with_columns(pl.col("value").str.json_decode(dtype).alias("value"))
 
     if convert_to_dataframe(melted_df).height > 0 and len(compare_columns) > 0:
         melted_df = (
             melted_df.with_columns(
-                pl.col("value").str.json_path_match(f"$.{meta.base_alias}").alias(meta.base_alias),
-                pl.col("value")
+                pl.col(meta.value_alias)
+                .str.json_path_match(f"$.{meta.base_alias}")
+                .alias(meta.base_alias),
+                pl.col(meta.value_alias)
                 .str.json_path_match(f"$.{meta.compare_alias}")
                 .alias(meta.compare_alias),
-                pl.col("value").str.json_path_match("$.has_diff").alias("has_diff"),
+                pl.col(meta.value_alias).str.json_path_match("$.has_diff").alias("has_diff"),
             )
-            .drop(["value"])
+            .drop([meta.value_alias])
             .with_columns(pl.col("has_diff").replace_strict({"false": False, "true": True}))
         )
     else:
@@ -348,7 +356,9 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFr
     if meta.sample_limit is not None:
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
-            .with_columns(pl.col("ones").cum_sum().over("variable").alias("rows_sample_number"))
+            .with_columns(
+                pl.col("ones").cum_sum().over(meta.variable_alias).alias("rows_sample_number")
+            )
             .filter(pl.col("rows_sample_number") <= pl.lit(meta.sample_limit))
             .drop("ones", "rows_sample_number")
         )
@@ -379,11 +389,13 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             sample_limit=None,
             base_alias=f"{meta.base_alias}_format",
             compare_alias=f"{meta.compare_alias}_format",
+            value_alias=meta.value_alias,
+            variable_alias=meta.variable_alias,
             schema_comparison=True,
             hide_empty_stats=False,
             validate="1:1",
         )
-    ).drop("variable")
+    ).drop(meta.variable_alias)
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -472,6 +484,8 @@ class compare:
         sample_limit: Optional[int] = 5,
         base_alias: str = "base",
         compare_alias: str = "compare",
+        value_alias: str = "value",
+        variable_alias: str = "variable",
         hide_empty_stats: bool = False,
         validate: Literal["m:m", "m:1", "1:m", "1:1"] = "m:m",
     ):
@@ -488,6 +502,8 @@ class compare:
             sample_limit (Optional[int]): The number of rows to sample from the comparison. This only applies to methods that return a sample.
             base_alias (str): The alias for the base dataframe. This will be displayed in the final result.
             compare_alias (str): The alias for the dataframe to be compared. This will be displayed in the final result.
+            value_alias (str): The alias for "value" column. This will be displayed in the final result.
+            variable_alias (str): The alias for the "variable" column. This will be displayed in the final result.
             hide_empty_stats (bool): Whether to hide empty statistics. Comparison statistics where there are zero differences will be excluded from the result.
             validate (str): Checks if join is of specified type {‘m:m’, ‘m:1’, ‘1:m’, ‘1:1’ }.
         """
@@ -510,6 +526,8 @@ class compare:
             sample_limit,
             base_alias,
             compare_alias,
+            value_alias,
+            variable_alias,
             False,
             hide_empty_stats,
             validate,

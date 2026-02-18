@@ -105,6 +105,37 @@ shape: (1, 4)
     )
 
 
+@pytest.mark.parametrize("column_name", ["value", "variable"])
+def test_special_column_names(column_name):
+    base_df = pl.DataFrame({column_name: ["123", "456", "888"], "x": [1, 2, 3]})
+    compare_df = pl.DataFrame({column_name: ["123", "456", "789"], "x": [1, 22, 3]})
+    expected_rows = pl.DataFrame(
+        {
+            column_name: ["888", "789"],
+            "-variable": ["status", "status"],
+            "-value": ["in base only", "in compare only"],
+        }
+    )
+    expected_values = pl.DataFrame(
+        {
+            column_name: ["456"],
+            "-variable": ["x"],
+            "base": ["2"],
+            "compare": ["22"],
+        }
+    )
+
+    # Without value_alias and variable_alias, the special column names would produce
+    #    polars.exceptions.DuplicateError: projections contained duplicate output name 'variable'
+    # because the same column names are used internally.
+    compare_result = compare(
+        [column_name], base_df, compare_df, value_alias="-value", variable_alias="-variable"
+    )
+
+    pl.testing.assert_frame_equal(compare_result.rows_sample(), expected_rows)
+    pl.testing.assert_frame_equal(compare_result.values_sample(), expected_values)
+
+
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
     compare_result = compare(None, base_df, base_df)
     assert compare_result.is_schemas_equal() is True
