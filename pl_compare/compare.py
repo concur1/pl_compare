@@ -27,22 +27,12 @@ def apply_column_renames(func: Callable):
         if not (hasattr(result, 'columns') and hasattr(result, 'rename')):
             return result
             
-        # Get all internal->output mappings from column mapping
-        internal_to_output = {
-            meta.column_mapping.status: meta.column_mapping.mapping.get(meta.column_mapping.status, meta.column_mapping.status),
-            meta.column_mapping.value: meta.column_mapping.mapping.get(meta.column_mapping.value, meta.column_mapping.value),
-            meta.column_mapping.base: meta.column_mapping.mapping.get(meta.column_mapping.base, meta.column_mapping.base),
-            meta.column_mapping.compare: meta.column_mapping.mapping.get(meta.column_mapping.compare, meta.column_mapping.compare),
-            meta.column_mapping.variable: meta.column_mapping.mapping.get(meta.column_mapping.variable, meta.column_mapping.variable),
-            meta.column_mapping.in_base: meta.column_mapping.mapping.get(meta.column_mapping.in_base, meta.column_mapping.in_base),
-            meta.column_mapping.in_compare: meta.column_mapping.mapping.get(meta.column_mapping.in_compare, meta.column_mapping.in_compare),
-        }
-        
-        # Build rename mapping only for columns that exist and need renaming
+        # Build rename mapping directly from column_mapping.mapping
         rename_mapping = {}
         result_columns = result.columns
         
-        for internal_col, output_col in internal_to_output.items():
+        # Iterate through all internal columns that might need renaming
+        for internal_col, output_col in meta.column_mapping.mapping.items():
             if (internal_col in result_columns and 
                 internal_col != output_col):
                 rename_mapping[internal_col] = output_col
