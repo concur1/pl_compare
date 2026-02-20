@@ -173,8 +173,8 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias("__pl_compare_status"),
-            pl.lit(f"in {meta.base_alias} only").alias("__pl_compare_value"),
+            pl.lit("status").alias(meta.column_mapping.status),
+            pl.lit(f"in {meta.base_alias} only").alias(meta.column_mapping.value),
         ]
     )
 
@@ -186,8 +186,8 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias("__pl_compare_status"),
-            pl.lit(f"in {meta.compare_alias} only").alias("__pl_compare_value"),
+            pl.lit("status").alias(meta.column_mapping.status),
+            pl.lit(f"in {meta.compare_alias} only").alias(meta.column_mapping.value),
         ]
     )
 
@@ -279,17 +279,15 @@ def get_combined_tables(
     how_join: Literal["inner", "full"] = "inner",
     resolution: Union[float, None] = None,
     validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
+    column_mapping: Optional[ColumnMapping] = None,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
     )
-    # Use internal column names to avoid conflicts with user columns
-    in_base_col = "in_base"
-    in_compare_col = "in_compare"
-    # Always use the prefixed internal column names
-    in_base_col = "__pl_compare_in_base"
-    in_compare_col = "__pl_compare_in_compare"
+    # Use internal column names from column mapping
+    in_base_col = column_mapping.in_base if column_mapping else "__pl_compare_in_base"
+    in_compare_col = column_mapping.in_compare if column_mapping else "__pl_compare_in_compare"
     
     compare_df = base_df.with_columns([pl.lit(True).alias(in_base_col)]).join(
         compare_df.with_columns([pl.lit(True).alias(in_compare_col)]),
@@ -396,6 +394,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         coalesce=coalesce,
         how_join=how_join,
         validate=meta.validate,
+        column_mapping=meta.column_mapping,
     )
     temp = combined_tables.with_columns(
         [
