@@ -673,6 +673,7 @@ def test_usage_of_status_column():
     )
 
     # This should not cause an error
+<<<<<<< fix-internal-column-usage
     compare_result = compare(["status"], base_df, compare_df)
 
 
@@ -765,3 +766,6 @@ def test_column_aliases_with_special_names():
     assert "result_var" in value_diff.columns
     assert "base" in value_diff.columns
     assert "compare" in value_diff.columns
+=======
+    compare(["status"], base_df, compare_df)
+>>>>>>> main
