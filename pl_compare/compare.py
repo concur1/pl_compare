@@ -54,30 +54,30 @@ def get_uncertain_row_count(df: pl.LazyFrame) -> int:
 
 
 def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
-    combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias("in_base")]).join(
-        meta.compare_df.select(meta.join_columns + [pl.lit(True).alias("in_compare")]),
+    combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias("__pl_compare_in_base")]).join(
+        meta.compare_df.select(meta.join_columns + [pl.lit(True).alias("__pl_compare_in_compare")]),
         on=meta.join_columns,
         how="full",
         coalesce=True,
         validate=meta.validate,
     )
     grouped_rows = (
-        combined_table.select(meta.join_columns + ["in_base", "in_compare"])
-        .group_by(["in_base", "in_compare"])
+        combined_table.select(meta.join_columns + ["__pl_compare_in_base", "__pl_compare_in_compare"])
+        .group_by(["__pl_compare_in_base", "__pl_compare_in_compare"])
         .agg(pl.len().alias("Count"))
     )
     base_only_rows = get_uncertain_row_count(
-        grouped_rows.filter(pl.col("in_base") & pl.col("in_compare").is_null())
+        grouped_rows.filter(pl.col("__pl_compare_in_base") & pl.col("__pl_compare_in_compare").is_null())
     )
     compare_only_rows = get_uncertain_row_count(
-        grouped_rows.filter(pl.col("in_base").is_null() & pl.col("in_compare"))
+        grouped_rows.filter(pl.col("__pl_compare_in_base").is_null() & pl.col("__pl_compare_in_compare"))
     )
     shared_rows = get_uncertain_row_count(
         grouped_rows.filter(
-            pl.col("in_base")
-            & pl.col("in_base").is_not_null()
-            & pl.col("in_compare")
-            & pl.col("in_compare").is_not_null()
+            pl.col("__pl_compare_in_base")
+            & pl.col("__pl_compare_in_base").is_not_null()
+            & pl.col("__pl_compare_in_compare")
+            & pl.col("__pl_compare_in_compare").is_not_null()
         )
     )
     final_df = (
@@ -106,7 +106,7 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     )
     return combined_table.select(
         [pl.col(join_col).alias(f"join_columns.{join_col}") for join_col in meta.join_columns]
-        + [pl.lit("status").alias("variable"), pl.lit(f"in {meta.base_alias} only").alias("value")]
+        + [pl.lit("status").alias("__pl_compare_variable__"), pl.lit(f"in {meta.base_alias} only").alias("__pl_compare_value__")]
     )
 
 
@@ -117,8 +117,8 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         [pl.col(join_col).alias(f"join_columns.{join_col}") for join_col in meta.join_columns]
         + [
-            pl.lit("status").alias("variable"),
-            pl.lit(f"in {meta.compare_alias} only").alias("value"),
+            pl.lit("status").alias("__pl_compare_variable__"),
+            pl.lit(f"in {meta.compare_alias} only").alias("__pl_compare_value__"),
         ]
     )
 
@@ -129,6 +129,24 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
+    
+    # Rename internal columns back to expected output names
+    rename_mapping = {"__pl_compare_variable__": "variable", "__pl_compare_value__": "value"}
+    
+    # Check if any join columns conflict with internal column names
+    reserved_columns = [
+        "variable", "value",
+        "status",
+        "base", "compare",
+        "__pl_compare_in_base", "__pl_compare_in_compare",
+    ]
+    has_conflict = any(join_col in reserved_columns for join_col in meta.join_columns)
+    
+    # Only rename join columns back to their original names if there's no conflict
+    if not has_conflict:
+        for join_col in meta.join_columns:
+            rename_mapping[f"join_columns.{join_col}"] = join_col
+    
     return (
         pl.concat(
             [
@@ -138,6 +156,7 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         )
         .sort("index")
         .drop("index")
+        .rename(rename_mapping)
     )
 
 
@@ -198,8 +217,8 @@ def get_combined_tables(
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
     )
-    compare_df = base_df.with_columns([pl.lit(True).alias("in_base")]).join(
-        compare_df.with_columns([pl.lit(True).alias("in_compare")]),
+    compare_df = base_df.with_columns([pl.lit(True).alias("__pl_compare_in_base")]).join(
+        compare_df.with_columns([pl.lit(True).alias("__pl_compare_in_compare")]),
         on=join_columns,
         how=how_join,
         coalesce=coalesce,
@@ -216,10 +235,10 @@ def get_combined_tables(
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     value_differences = get_column_value_differences(meta)
     final_df = (
-        value_differences.group_by(["variable"])
+        value_differences.group_by(["__pl_compare_variable__"])
         .agg(pl.sum("has_diff"))
-        .sort("variable", descending=False)
-        .rename({"variable": "Value Differences", "has_diff": "Count"})
+        .sort("__pl_compare_variable__", descending=False)
+        .rename({"__pl_compare_variable__": "Value Differences", "has_diff": "Count"})
     )
     total_value_comparisons = value_differences.select(
         pl.lit("Total Value Comparisons").alias("Value Differences"),
@@ -275,6 +294,16 @@ def get_columns_to_compare(
             get_schema_comparison(meta).select(pl.col("column").alias("column")).to_series(0).to_list()
         )
 
+    # Exclude columns with names that conflict with internal column names used in unpivot operations
+    # These are the only columns that would cause actual conflicts
+    reserved_columns = [
+        "variable", "value",  # Internal unpivot column names - these are the main ones that cause conflicts
+        "status",  # Used in row comparison status
+        "base", "compare",  # Used as aliases in value comparison
+        "__pl_compare_in_base", "__pl_compare_in_compare",  # Used as internal flags in join operations
+    ]
+    columns_to_exclude.extend(reserved_columns)
+
     return {
         col: format
         for col, format in meta.base_df.collect().schema.items()
@@ -319,18 +348,20 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     melted_df = temp.unpivot(
         index=meta.join_columns,
         on=[col for col, format in compare_columns.items()],
+        variable_name="__pl_compare_variable__",
+        value_name="__pl_compare_value__",
     ).rename({join_col: f"join_columns.{join_col}" for join_col in meta.join_columns})
 
     if convert_to_dataframe(melted_df).height > 0 and len(compare_columns) > 0:
         melted_df = (
             melted_df.with_columns(
-                pl.col("value").str.json_path_match(f"$.{meta.base_alias}").alias(meta.base_alias),
-                pl.col("value")
+                pl.col("__pl_compare_value__").str.json_path_match(f"$.{meta.base_alias}").alias(meta.base_alias),
+                pl.col("__pl_compare_value__")
                 .str.json_path_match(f"$.{meta.compare_alias}")
                 .alias(meta.compare_alias),
-                pl.col("value").str.json_path_match("$.has_diff").alias("has_diff"),
+                pl.col("__pl_compare_value__").str.json_path_match("$.has_diff").alias("has_diff"),
             )
-            .drop(["value"])
+            .drop(["__pl_compare_value__"])
             .with_columns(pl.col("has_diff").replace_strict({"false": False, "true": True}))
         )
     else:
@@ -345,11 +376,31 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFr
     if meta.sample_limit is not None:
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
-            .with_columns(pl.col("ones").cum_sum().over("variable").alias("rows_sample_number"))
+            .with_columns(pl.col("ones").cum_sum().over("__pl_compare_variable__").alias("rows_sample_number"))
             .filter(pl.col("rows_sample_number") <= pl.lit(meta.sample_limit))
             .drop("ones", "rows_sample_number")
         )
-    return filtered_df
+    
+    # Rename internal columns back to expected output names
+    rename_mapping = {"__pl_compare_variable__": "variable"}
+    if "__pl_compare_value__" in filtered_df.columns:
+        rename_mapping["__pl_compare_value__"] = "value"
+    
+    # Check if any join columns conflict with internal column names
+    reserved_columns = [
+        "variable", "value",
+        "status",
+        "base", "compare",
+        "__pl_compare_in_base", "__pl_compare_in_compare",
+    ]
+    has_conflict = any(join_col in reserved_columns for join_col in meta.join_columns)
+    
+    # Only rename join columns back to their original names if there's no conflict
+    if not has_conflict:
+        for join_col in meta.join_columns:
+            rename_mapping[f"join_columns.{join_col}"] = join_col
+    
+    return filtered_df.rename(rename_mapping)
 
 
 def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
