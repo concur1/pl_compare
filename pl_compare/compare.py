@@ -9,7 +9,6 @@ from polars.datatypes.classes import DataTypeClass
 def apply_column_renames(func: Callable):
     """
     Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
-    
     This decorator automatically renames internal column names to their final output names
     based on the column mapping in the ComparisonMetadata.
     
@@ -23,21 +22,17 @@ def apply_column_renames(func: Callable):
     def wrapper(meta: ComparisonMetadata, *args, **kwargs):
         result = func(meta, *args, **kwargs)
         
-        # Only apply renames if result has columns and rename method
         if not (hasattr(result, 'columns') and hasattr(result, 'rename')):
             return result
             
-        # Build rename mapping directly from column_mapping.mapping
         rename_mapping = {}
         result_columns = result.columns
         
-        # Iterate through all internal columns that might need renaming
         for internal_col, output_col in meta.column_mapping.mapping.items():
             if (internal_col in result_columns and 
                 internal_col != output_col):
                 rename_mapping[internal_col] = output_col
         
-        # Apply renames if needed
         if rename_mapping:
             result = result.rename(rename_mapping)
                 
@@ -51,10 +46,7 @@ from dataclasses import dataclass
 @dataclass
 class ColumnMapping:
     """Class for holding internal column names and their mappings to output names."""
-    # Mapping from internal names to output names (must come first as it has no default)
     mapping: Dict[str, str]
-    
-    # Internal column names (always prefixed with __pl_compare_)
     in_base: str = "__pl_compare_in_base"
     in_compare: str = "__pl_compare_in_compare"
     value: str = "__pl_compare_value"
@@ -643,15 +635,11 @@ class compare:
             join_columns = ["row_number"]
 
         # Always prefix ALL join columns for consistent output
-        join_column_renames = {}
-        for col in join_columns:
-            join_column_renames[col] = f"join_columns.{col}"
+        join_column_renames = {col: f"join_columns.{col}" for col in join_columns}
         
-        # Apply join column prefixing
+        # Apply join column prefixing and update join_columns list
         base_lazy_df = base_lazy_df.rename(join_column_renames)
         compare_lazy_df = compare_lazy_df.rename(join_column_renames)
-        
-        # Update join_columns with prefixed names
         join_columns = [join_column_renames[col] for col in join_columns]
         
         # Get all user column names from both dataframes (after join column prefixing)
@@ -659,9 +647,7 @@ class compare:
         compare_columns = compare_lazy_df.collect().columns
         all_user_columns = list(set(base_columns) | set(compare_columns))
         
-        # Generate column mapping to handle conflicts with output column names
-        # Since join columns are always prefixed, we only need to handle conflicts
-        # with non-join user columns that match our output column names
+        # Generate column mapping with user-specified aliases
         column_mapping = _generate_column_mapping(
             all_user_columns,
             value_alias=value_alias,
