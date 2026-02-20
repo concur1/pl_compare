@@ -542,33 +542,19 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     schema_comparison = get_schema_comparison(meta)
-    # The schema comparison now returns columns with just the aliases, not the _format suffix
+    # Schema comparison returns columns with _format suffix
     base_format_col = f"{meta.base_alias}_format"
     compare_format_col = f"{meta.compare_alias}_format"
     
-    # Check if the old format columns exist, otherwise use the new format
-    schema_cols = schema_comparison.columns
-    if base_format_col in schema_cols and compare_format_col in schema_cols:
-        schema_differences = (
-            schema_comparison.filter(
-                pl.col(base_format_col).is_not_null()
-                & pl.col(compare_format_col).is_not_null()
-                & (pl.col(base_format_col) != pl.col(compare_format_col))
-            )
-            .select(pl.len().alias("Count"))
-            .item()
+    schema_differences = (
+        schema_comparison.filter(
+            pl.col(base_format_col).is_not_null()
+            & pl.col(compare_format_col).is_not_null()
+            & (pl.col(base_format_col) != pl.col(compare_format_col))
         )
-    else:
-        # New format: columns are just base_alias and compare_alias
-        schema_differences = (
-            schema_comparison.filter(
-                pl.col(meta.base_alias).is_not_null()
-                & pl.col(meta.compare_alias).is_not_null()
-                & (pl.col(meta.base_alias) != pl.col(meta.compare_alias))
-            )
-            .select(pl.len().alias("Count"))
-            .item()
-        )
+        .select(pl.len().alias("Count"))
+        .item()
+    )
     final_df = pl.LazyFrame(
         {
             "Statistic": [
