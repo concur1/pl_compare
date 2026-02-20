@@ -732,7 +732,6 @@ def test_column_aliases_with_special_names():
     
     # Verify user's 'value' column is preserved with join_columns prefix
     assert "value" not in row_diff.columns  # Should be prefixed
-    breakpoint()
     
     value_diff = result.values_sample()
     assert "result_var" in value_diff.columns

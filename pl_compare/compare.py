@@ -1,8 +1,59 @@
 from dataclasses import dataclass
 from typing import Literal, Callable, List, Union, Dict, Optional
+from functools import wraps
 
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
+
+
+def apply_column_renames(func: Callable):
+    """
+    Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
+    
+    This decorator automatically renames internal column names to their final output names
+    based on the column mapping in the ComparisonMetadata.
+    
+    Args:
+        func: The function that returns a DataFrame or LazyFrame to be renamed
+        
+    Returns:
+        A wrapped function that applies column renames to the result
+    """
+    @wraps(func)
+    def wrapper(meta: ComparisonMetadata, *args, **kwargs):
+        result = func(meta, *args, **kwargs)
+        
+        # Only apply renames if result has columns and rename method
+        if not (hasattr(result, 'columns') and hasattr(result, 'rename')):
+            return result
+            
+        # Get all internal->output mappings from column mapping
+        internal_to_output = {
+            meta.column_mapping.status: meta.column_mapping.mapping.get(meta.column_mapping.status, meta.column_mapping.status),
+            meta.column_mapping.value: meta.column_mapping.mapping.get(meta.column_mapping.value, meta.column_mapping.value),
+            meta.column_mapping.base: meta.column_mapping.mapping.get(meta.column_mapping.base, meta.column_mapping.base),
+            meta.column_mapping.compare: meta.column_mapping.mapping.get(meta.column_mapping.compare, meta.column_mapping.compare),
+            meta.column_mapping.variable: meta.column_mapping.mapping.get(meta.column_mapping.variable, meta.column_mapping.variable),
+            meta.column_mapping.in_base: meta.column_mapping.mapping.get(meta.column_mapping.in_base, meta.column_mapping.in_base),
+            meta.column_mapping.in_compare: meta.column_mapping.mapping.get(meta.column_mapping.in_compare, meta.column_mapping.in_compare),
+        }
+        
+        # Build rename mapping only for columns that exist and need renaming
+        rename_mapping = {}
+        result_columns = result.columns
+        
+        for internal_col, output_col in internal_to_output.items():
+            if (internal_col in result_columns and 
+                internal_col != output_col):
+                rename_mapping[internal_col] = output_col
+        
+        # Apply renames if needed
+        if rename_mapping:
+            result = result.rename(rename_mapping)
+                
+        return result
+    
+    return wrapper
 
 
 from dataclasses import dataclass
@@ -58,7 +109,7 @@ def _generate_column_mapping(
             "__pl_compare_variable": variable_alias,
             "__pl_compare_base": base_alias,
             "__pl_compare_compare": compare_alias,
-            "__pl_compare_status": "status",  # status is used internally but appears as variable in output
+            "__pl_compare_status": variable_alias,  # status is used internally but appears as variable in output
         }
     )
 
@@ -168,6 +219,7 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
         on=meta.join_columns,
         how="anti",
     )
+    # The status column should contain the literal string "status" but be named with the variable alias
     return combined_table.select(
         meta.join_columns
         + [
@@ -181,6 +233,7 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     combined_table = meta.compare_df.select(meta.join_columns).join(
         meta.base_df.select(meta.join_columns), on=meta.join_columns, how="anti"
     )
+    # The status column should contain the literal string "status" but be named with the variable alias
     return combined_table.select(
         meta.join_columns
         + [
@@ -190,6 +243,7 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     )
 
 
+@apply_column_renames
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_only_rows = get_base_only_rows(meta).with_row_index()
     compare_only_rows = get_compare_only_rows(meta).with_row_index()
@@ -208,22 +262,6 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         .sort("index")
         .drop("index")
     )
-    
-    # Rename internal columns to final output names using column mapping
-    internal_status_col = meta.column_mapping.status
-    internal_value_col = meta.column_mapping.value
-    
-    rename_mapping = {}
-    variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
-    value_alias = meta.column_mapping.mapping[meta.column_mapping.value]
-    
-    if internal_status_col != variable_alias:
-        rename_mapping[internal_status_col] = variable_alias
-    if internal_value_col != value_alias:
-        rename_mapping[internal_value_col] = value_alias
-        
-    if rename_mapping:
-        result = result.rename(rename_mapping)
     
     return result
 
@@ -379,6 +417,7 @@ def get_columns_to_compare(
     }
 
 
+@apply_column_renames
 def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     how_join: Literal["inner", "full"] = "inner"
     coalesce: bool = False
@@ -442,20 +481,6 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
 
     result = melted_df.collect()
-    
-    # Rename internal columns to final output names using column mapping
-    variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
-    base_alias = meta.column_mapping.mapping[meta.column_mapping.base]
-    compare_alias = meta.column_mapping.mapping[meta.column_mapping.compare]
-    
-    rename_mapping = {internal_variable_col: variable_alias}
-    # Only add base and compare column renames if they exist in the result
-    if meta.column_mapping.base in result.columns:
-        rename_mapping[meta.column_mapping.base] = base_alias
-    if meta.column_mapping.compare in result.columns:
-        rename_mapping[meta.column_mapping.compare] = compare_alias
-    
-    result = result.rename(rename_mapping)
     
     return result
 
