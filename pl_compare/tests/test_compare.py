@@ -824,3 +824,51 @@ def test_reserved_column_names_error_specific_columns():
         
         with pytest.raises(ValueError, match=f"Column name.*{reserved_col}.*are reserved"):
             compare(["ID"], base_df, compare_df)
+
+
+def test_apply_column_renames_type_error():
+    """Test that @apply_column_renames raises TypeError for non-DataFrame/LazyFrame results."""
+    from pl_compare.compare import apply_column_renames, ComparisonMetadata, ColumnMapping
+    
+    # Create a mock function that returns an invalid type
+    @apply_column_renames
+    def mock_function_returns_string(meta: ComparisonMetadata):
+        return "invalid_result"
+    
+    @apply_column_renames  
+    def mock_function_returns_int(meta: ComparisonMetadata):
+        return 42
+    
+    @apply_column_renames
+    def mock_function_returns_list(meta: ComparisonMetadata):
+        return [1, 2, 3]
+    
+    # Create a mock metadata object
+    mock_meta = ComparisonMetadata(
+        join_columns=["ID"],
+        base_df=pl.LazyFrame({"ID": [1, 2, 3]}),
+        compare_df=pl.LazyFrame({"ID": [1, 2, 3]}),
+        streaming=False,
+        resolution=None,
+        equality_check=None,
+        sample_limit=None,
+        base_alias="base",
+        compare_alias="compare",
+        schema_comparison=False,
+        hide_empty_stats=False,
+        validate="m:m",
+        column_mapping=ColumnMapping(mapping={"__pl_compare_value": "value"})
+    )
+    
+    # Test string result
+    with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
+        mock_function_returns_string(mock_meta)
+    
+    # Test int result
+    with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
+        mock_function_returns_int(mock_meta)
+    
+    # Test list result
+    with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
+        mock_function_returns_list(mock_meta)
+    

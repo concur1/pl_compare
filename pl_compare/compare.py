@@ -22,20 +22,31 @@ def apply_column_renames(func: Callable):
     @wraps(func)
     def wrapper(meta: ComparisonMetadata, *args, **kwargs):
         result = func(meta, *args, **kwargs)
+        if not isinstance(result, pl.LazyFrame) and not isinstance(result, pl.DataFrame):
+            raise TypeError(
+                f"Expected result to be a polars DataFrame or LazyFrame, "
+                f"but got {type(result).__name__}. "
+                f"The @apply_column_renames decorator can only be applied to functions "
+                f"that return polars DataFrames or LazyFrames."
+            )
 
-        if not (hasattr(result, "columns") and hasattr(result, "rename")):
-            return result
-
-        rename_mapping = {}
-        result_columns = result.columns
-
+        if isinstance(result, pl.LazyFrame):
+            result_columns = result.collect_schema().names()
+            rename_mapping = {}
+            
+               
+        if isinstance(result, pl.DataFrame):
+            result_columns = result.columns
+            rename_mapping = {}
+            
         for internal_col, output_col in meta.column_mapping.mapping.items():
             if internal_col in result_columns and internal_col != output_col:
                 rename_mapping[internal_col] = output_col
-
+        
         if rename_mapping:
             result = result.rename(rename_mapping)
 
+                
         return result
 
     return wrapper
