@@ -487,10 +487,10 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     with pytest.raises(pl.exceptions.ComputeError):
         compare(["ID"], compare_df, base_df, validate="m:1").rows_summary()
 
-    compare(["ID", "ID2"], base_df, compare_df, "m:1").values_summary()
-    compare(["ID", "ID2"], base_df, compare_df, "m:1").rows_summary()
-    compare(["ID", "ID2"], compare_df, base_df, "1:m").values_summary()
-    compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
+    compare(["ID", "ID2"], base_df, compare_df, validate="m:1").values_summary()
+    compare(["ID", "ID2"], base_df, compare_df, validate="m:1").rows_summary()
+    compare(["ID", "ID2"], compare_df, base_df, validate="1:m").values_summary()
+    compare(["ID", "ID2"], compare_df, base_df, validate="1:m").rows_summary()
 
 
 def test_for_single_column_table_columns():

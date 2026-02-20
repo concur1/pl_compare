@@ -28,9 +28,13 @@ def _generate_column_mapping(
     Returns:
         Dictionary mapping internal column names to output column names
     """
-    # List of output column names that need to be checked for conflicts
-    # Only these columns appear in the final output and need to be protected
-    output_columns = {
+    # Define all internal columns and their output names
+    # This dict serves as both documentation and the source of truth
+    internal_columns = {
+        # Critical internal columns used in join operations
+        "in_base": "in_base",
+        "in_compare": "in_compare",
+        # Output columns that appear in final results
         "value": value_alias,
         "variable": variable_alias,
         "base": base_alias,
@@ -38,36 +42,25 @@ def _generate_column_mapping(
         "status": "status",  # status is used internally but appears as variable in output
     }
     
-    # Internal columns that must never conflict (these are used in join operations)
-    critical_internal_columns = ["in_base", "in_compare"]
-    
     column_mapping = {}
-    user_column_renames = {}  # For renaming user columns that conflict
-    internal_column_renames = {}  # For renaming internal columns that conflict
-    
-    # First handle critical internal columns that must never conflict
-    for critical_col in critical_internal_columns:
-        if critical_col in user_columns:
-            # Use a unique internal name for the critical column
-            unique_internal_name = f"__pl_compare_{critical_col}"
-            internal_column_renames[critical_col] = unique_internal_name
+    internal_renames = {}  # Maps conflicting user columns to internal names
 
     
-    # Handle output columns - never rename them, use internal names if needed
-    for internal_name, output_name in output_columns.items():
+    # Process each internal column
+    for internal_name, output_name in internal_columns.items():
         if output_name in user_columns:
-            # Conflict detected - use a unique internal name for processing
-            # Output will still use the original name
+            # Conflict detected - use unique internal name
             unique_internal_name = f"__pl_compare_{internal_name}"
-            internal_column_renames[output_name] = unique_internal_name
-            column_mapping[internal_name] = output_name  # Output still uses original name
+            internal_renames[output_name] = unique_internal_name
+            # Output still uses the original name, internal processing uses unique name
+            column_mapping[internal_name] = output_name
         else:
-            # No conflict, use the same name for both internal and output
+            # No conflict - use the same name for both internal and output
             column_mapping[internal_name] = output_name
     
-    # Store internal column renames in the mapping
-    if internal_column_renames:
-        column_mapping["__internal_column_renames__"] = internal_column_renames
+    # Store internal renames if any conflicts were found
+    if internal_renames:
+        column_mapping["__internal_column_renames__"] = internal_renames
     
     return column_mapping
 
@@ -597,6 +590,7 @@ class compare:
         join_columns: Union[List[str], None],
         base_df: Union[pl.LazyFrame, pl.DataFrame],
         compare_df: Union[pl.LazyFrame, pl.DataFrame],
+        *,  # Everything from here is keyword-only
         streaming: bool = False,
         resolution: Union[float, None] = None,
         equality_check: Union[
