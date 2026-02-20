@@ -640,7 +640,7 @@ class compare:
             )
             join_columns = ["row_number"]
 
-        # Always prefix ALL join columns to avoid conflicts
+        # Always prefix ALL join columns to avoid conflicts with our output columns
         join_column_renames = {col: f"join_columns.{col}" for col in join_columns}
         base_lazy_df = base_lazy_df.rename(join_column_renames)
         compare_lazy_df = compare_lazy_df.rename(join_column_renames)
