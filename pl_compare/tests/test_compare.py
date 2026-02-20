@@ -154,8 +154,32 @@ def test_special_column_names(column_name):
     # because the same column names are used internally.
     compare_result = compare([column_name], base_df, compare_df)
 
+    # Test multiple methods that use column aliases
     pl.testing.assert_frame_equal(compare_result.rows_sample(), expected_rows)
     pl.testing.assert_frame_equal(compare_result.values_sample(), expected_values)
+    
+    schemas_sample = compare_result.schemas_sample()
+    assert "column" in schemas_sample.columns
+    
+    rows_summary = compare_result.rows_summary()
+    assert rows_summary.height > 0
+    assert "Statistic" in rows_summary.columns
+    assert "Count" in rows_summary.columns
+    
+    values_summary = compare_result.values_summary()
+    assert values_summary.height > 0
+    assert "Value Differences" in values_summary.columns
+    assert "Count" in values_summary.columns
+    assert "Percentage" in values_summary.columns
+    
+    summary = compare_result.summary()
+    assert summary.height > 0
+    assert "Statistic" in summary.columns
+    assert "Count" in summary.columns
+    
+    assert compare_result.is_rows_equal() is False     # Rows differ
+    assert compare_result.is_values_equal() is False   # Values differ
+    assert compare_result.is_equal() is False           # Overall not equal
 
 
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
