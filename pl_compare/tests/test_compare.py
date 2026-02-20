@@ -73,14 +73,14 @@ shape: (5, 2)
 │ Rows in test and other ┆ 2     │
 └────────────────────────┴───────┘
 shape: (2, 3)
-┌────────────┬──────────┬───────────────┐
-│ ID         ┆ variable ┆ value         │
-│ ---        ┆ ---      ┆ ---           │
-│ str        ┆ str      ┆ str           │
-╞════════════╪══════════╪═══════════════╡
-│ 12345678   ┆ status   ┆ in test only  │
-│ 1234567810 ┆ status   ┆ in other only │
-└────────────┴──────────┴───────────────┘""" in str(
+┌─────────────────┬──────────┬───────────────┐
+│ join_columns.ID ┆ variable ┆ value         │
+│ ---             ┆ ---      ┆ ---           │
+│ str             ┆ str      ┆ str           │
+╞═════════════════╪══════════╪═══════════════╡
+│ 12345678        ┆ status   ┆ in test only  │
+│ 1234567810      ┆ status   ┆ in other only │
+└─────────────────┴──────────┴───────────────┘""" in str(
         compare_result.report()
     )
     assert """VALUE DIFFERENCES:
@@ -94,13 +94,13 @@ shape: (2, 3)
 │ Example1                ┆ 1     ┆ 50.0       │
 └─────────────────────────┴───────┴────────────┘
 shape: (1, 4)
-┌─────────┬──────────┬──────┬───────┐
-│ ID      ┆ variable ┆ test ┆ other │
-│ ---     ┆ ---      ┆ ---  ┆ ---   │
-│ str     ┆ str      ┆ str  ┆ str   │
-╞═════════╪══════════╪══════╪═══════╡
-│ 1234567 ┆ Example1 ┆ 6    ┆ 2     │
-└─────────┴──────────┴──────┴───────┘""" in str(
+┌─────────────────┬──────────┬──────┬───────┐
+│ join_columns.ID ┆ variable ┆ test ┆ other │
+│ ---             ┆ ---      ┆ ---  ┆ ---   │
+│ str             ┆ str      ┆ str  ┆ str   │
+╞═════════════════╪══════════╪══════╪═══════╡
+│ 1234567         ┆ Example1 ┆ 6    ┆ 2     │
+└─────────────────┴──────────┴──────┴───────┘""" in str(
         compare_result.report()
     )
 
@@ -130,11 +130,8 @@ shape: (1, 4)
 def test_special_column_names(column_name):
     base_df = pl.DataFrame({column_name: ["123", "456", "888"], "x": [1, 2, 3]})
     compare_df = pl.DataFrame({column_name: ["123", "456", "789"], "x": [1, 22, 3]})
-    # For columns that don't conflict with internal names, they won't be prefixed
-    if column_name in ["value", "variable", "status", "base", "compare"]:
-        join_col = f"join_columns.{column_name}"
-    else:
-        join_col = column_name
+    # With consistent join column prefixing, ALL join columns are always prefixed
+    join_col = f"join_columns.{column_name}"
     
     expected_rows = pl.DataFrame(
         {
@@ -257,7 +254,7 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_row_differences = pl.DataFrame(
         {
-            "ID": ["12345678", "1234567810"],
+            "join_columns.ID": ["12345678", "1234567810"],
             "variable": ["status", "status"],
             "value": ["in base only", "in compare only"],
         }
@@ -283,7 +280,7 @@ def test_expected_values_returned_values_summary(base_df, compare_df):
 def test_expected_values_returned_value_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
-        {"ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
+        {"join_columns.ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
     )
     assert_frame_equal(compare_result.values_sample(), expected_value_differences)
 
@@ -554,15 +551,17 @@ shape: (5, 2)
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
 shape: (3, 6)
-┌────────────┬────────────┬────────────┬────────────┬──────────┬─────────────────┐
-│ ID         ┆ ID2        ┆ ID3        ┆ ID4        ┆ variable ┆ value           │
-│ ---        ┆ ---        ┆ ---        ┆ ---        ┆ ---      ┆ ---             │
-│ str        ┆ str        ┆ str        ┆ str        ┆ str      ┆ str             │
-╞════════════╪════════════╪════════════╪════════════╪══════════╪═════════════════╡
-│ 123456     ┆ 123457     ┆ 123457     ┆ 123457     ┆ status   ┆ in base only    │
-│ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ status   ┆ in compare only │
-│ 12345678   ┆ 12345678   ┆ 12345678   ┆ 12345678   ┆ status   ┆ in base only    │
-└────────────┴────────────┴────────────┴────────────┴──────────┴─────────────────┘
+┌─────────────────┬─────────────────┬─────────────────┬────────────────┬──────────┬────────────────┐
+│ join_columns.ID ┆ join_columns.ID ┆ join_columns.ID ┆ join_columns.I ┆ variable ┆ value          │
+│ ---             ┆ 2               ┆ 3               ┆ D4             ┆ ---      ┆ ---            │
+│ str             ┆ ---             ┆ ---             ┆ ---            ┆ str      ┆ str            │
+│                 ┆ str             ┆ str             ┆ str            ┆          ┆                │
+╞═════════════════╪═════════════════╪═════════════════╪════════════════╪══════════╪════════════════╡
+│ 123456          ┆ 123457          ┆ 123457          ┆ 123457         ┆ status   ┆ in base only   │
+│ 1234567810      ┆ 1234567810      ┆ 1234567810      ┆ 1234567810     ┆ status   ┆ in compare     │
+│                 ┆                 ┆                 ┆                ┆          ┆ only           │
+│ 12345678        ┆ 12345678        ┆ 12345678        ┆ 12345678       ┆ status   ┆ in base only   │
+└─────────────────┴─────────────────┴─────────────────┴────────────────┴──────────┴────────────────┘
 """ in str(
         comp.report()
     )

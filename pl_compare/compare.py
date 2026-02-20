@@ -641,12 +641,26 @@ class compare:
             )
             join_columns = ["row_number"]
 
-        # Get all user column names from both dataframes
+        # Always prefix ALL join columns for consistent output
+        join_column_renames = {}
+        for col in join_columns:
+            join_column_renames[col] = f"join_columns.{col}"
+        
+        # Apply join column prefixing
+        base_lazy_df = base_lazy_df.rename(join_column_renames)
+        compare_lazy_df = compare_lazy_df.rename(join_column_renames)
+        
+        # Update join_columns with prefixed names
+        join_columns = [join_column_renames[col] for col in join_columns]
+        
+        # Get all user column names from both dataframes (after join column prefixing)
         base_columns = base_lazy_df.collect().columns
         compare_columns = compare_lazy_df.collect().columns
         all_user_columns = list(set(base_columns) | set(compare_columns))
         
-        # Generate column mapping to handle conflicts
+        # Generate column mapping to handle conflicts with output column names
+        # Since join columns are always prefixed, we only need to handle conflicts
+        # with non-join user columns that match our output column names
         column_mapping = _generate_column_mapping(
             all_user_columns,
             value_alias=value_alias,
@@ -655,20 +669,11 @@ class compare:
             compare_alias=compare_alias,
         )
         
-        # Apply user column renames if needed
+        # Apply user column renames if needed (for non-join columns that conflict)
         user_column_renames = column_mapping.get("__user_column_renames__", {})
         if user_column_renames:
             base_lazy_df = base_lazy_df.rename(user_column_renames)
             compare_lazy_df = compare_lazy_df.rename(user_column_renames)
-            
-            # Update join_columns if they were renamed
-            updated_join_columns = []
-            for col in join_columns:
-                if col in user_column_renames:
-                    updated_join_columns.append(user_column_renames[col])
-                else:
-                    updated_join_columns.append(col)
-            join_columns = updated_join_columns
         
         self._comparison_metadata = ComparisonMetadata(
             join_columns,
