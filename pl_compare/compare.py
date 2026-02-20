@@ -11,41 +11,43 @@ def apply_column_renames(func: Callable):
     Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
     This decorator automatically renames internal column names to their final output names
     based on the column mapping in the ComparisonMetadata.
-    
+
     Args:
         func: The function that returns a DataFrame or LazyFrame to be renamed
-        
+
     Returns:
         A wrapped function that applies column renames to the result
     """
+
     @wraps(func)
     def wrapper(meta: ComparisonMetadata, *args, **kwargs):
         result = func(meta, *args, **kwargs)
-        
-        if not (hasattr(result, 'columns') and hasattr(result, 'rename')):
+
+        if not (hasattr(result, "columns") and hasattr(result, "rename")):
             return result
-            
+
         rename_mapping = {}
         result_columns = result.columns
-        
+
         for internal_col, output_col in meta.column_mapping.mapping.items():
-            if (internal_col in result_columns and 
-                internal_col != output_col):
+            if internal_col in result_columns and internal_col != output_col:
                 rename_mapping[internal_col] = output_col
-        
+
         if rename_mapping:
             result = result.rename(rename_mapping)
-                
+
         return result
-    
+
     return wrapper
 
 
 from dataclasses import dataclass
 
+
 @dataclass
 class ColumnMapping:
     """Class for holding internal column names and their mappings to output names."""
+
     mapping: Dict[str, str]
     in_base: str = "__pl_compare_in_base"
     in_compare: str = "__pl_compare_in_compare"
@@ -65,17 +67,17 @@ def _generate_column_mapping(
 ) -> ColumnMapping:
     """
     Generate a mapping of internal column names to output column names.
-    
+
     This function creates a ColumnMapping object that contains both the internal column names
     and the mapping from internal names to output names.
-    
+
     Args:
         user_columns: List of column names from user dataframes
         value_alias: Desired output name for value column
         variable_alias: Desired output name for variable column
         base_alias: Desired output name for base column
         compare_alias: Desired output name for compare column
-        
+
     Returns:
         ColumnMapping object containing internal names and their mappings to output names
     """
@@ -148,8 +150,10 @@ def get_uncertain_row_count(df: pl.LazyFrame) -> int:
 def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
     in_base_col = meta.column_mapping.in_base
     in_compare_col = meta.column_mapping.in_compare
-    
-    combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias(in_base_col)]).join(
+
+    combined_table = meta.base_df.select(
+        meta.join_columns + [pl.lit(True).alias(in_base_col)]
+    ).join(
         meta.compare_df.select(meta.join_columns + [pl.lit(True).alias(in_compare_col)]),
         on=meta.join_columns,
         how="full",
@@ -161,7 +165,7 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         .group_by([in_base_col, in_compare_col])
         .agg(pl.len().alias("Count"))
     )
-    
+
     base_only_rows = get_uncertain_row_count(
         grouped_rows.filter(pl.col(in_base_col) & pl.col(in_compare_col).is_null())
     )
@@ -229,7 +233,7 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
-    
+
     return (
         pl.concat(
             [
@@ -297,11 +301,11 @@ def get_combined_tables(
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
     )
-    
+
     # Get column names directly from meta's column mapping
     in_base_col = meta.column_mapping.in_base
     in_compare_col = meta.column_mapping.in_compare
-    
+
     compare_df = base_df.with_columns([pl.lit(True).alias(in_base_col)]).join(
         compare_df.with_columns([pl.lit(True).alias(in_compare_col)]),
         on=join_columns,
@@ -311,7 +315,9 @@ def get_combined_tables(
     )
     return compare_df.with_columns(
         [
-            get_equality_check(meta.equality_check, meta.resolution, col, format).alias(f"{col}_has_diff")
+            get_equality_check(meta.equality_check, meta.resolution, col, format).alias(
+                f"{col}_has_diff"
+            )
             for col, format in compare_columns.items()
         ]
     )
@@ -425,7 +431,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     # Use internal column names from column mapping for unpivot to avoid conflicts
     internal_variable_col = meta.column_mapping.variable
     internal_value_col = meta.column_mapping.value
-    
+
     melted_df = temp.unpivot(
         index=meta.join_columns,
         on=[col for col, format in compare_columns.items()],
@@ -452,7 +458,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
 
     result = melted_df.collect()
-    
+
     return result
 
 
@@ -464,9 +470,7 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFr
         variable_col = meta.column_mapping.mapping[meta.column_mapping.variable]
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
-            .with_columns(
-                pl.col("ones").cum_sum().over(variable_col).alias("rows_sample_number")
-            )
+            .with_columns(pl.col("ones").cum_sum().over(variable_col).alias("rows_sample_number"))
             .filter(pl.col("rows_sample_number") <= pl.lit(meta.sample_limit))
             .drop("ones", "rows_sample_number")
         )
@@ -508,7 +512,9 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             validate="1:1",
             column_mapping=format_column_mapping,
         )
-    ).drop("variable")  # Drop the variable column to match expected schema comparison format
+    ).drop(
+        "variable"
+    )  # Drop the variable column to match expected schema comparison format
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
@@ -516,7 +522,7 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     # Schema comparison returns columns with _format suffix
     base_format_col = f"{meta.base_alias}_format"
     compare_format_col = f"{meta.compare_alias}_format"
-    
+
     schema_differences = (
         schema_comparison.filter(
             pl.col(base_format_col).is_not_null()
@@ -634,20 +640,16 @@ class compare:
             )
             join_columns = ["row_number"]
 
-        # Always prefix ALL join columns for consistent output
+        # Always prefix ALL join columns to avoid conflicts
         join_column_renames = {col: f"join_columns.{col}" for col in join_columns}
-        
-        # Apply join column prefixing and update join_columns list
         base_lazy_df = base_lazy_df.rename(join_column_renames)
         compare_lazy_df = compare_lazy_df.rename(join_column_renames)
         join_columns = [join_column_renames[col] for col in join_columns]
-        
-        # Get all user column names from both dataframes (after join column prefixing)
-        base_columns = base_lazy_df.collect().columns
-        compare_columns = compare_lazy_df.collect().columns
-        all_user_columns = list(set(base_columns) | set(compare_columns))
-        
-        # Generate column mapping with user-specified aliases
+
+        all_user_columns = list(
+            set(base_lazy_df.collect().columns) | set(compare_lazy_df.collect().columns)
+        )
+
         column_mapping = _generate_column_mapping(
             all_user_columns,
             value_alias=value_alias,
@@ -655,7 +657,7 @@ class compare:
             base_alias=base_alias,
             compare_alias=compare_alias,
         )
-        
+
         self._comparison_metadata = ComparisonMetadata(
             join_columns,
             base_lazy_df,
