@@ -765,4 +765,62 @@ def test_column_aliases_with_special_names():
     assert "result_var" in value_diff.columns
     assert "base" in value_diff.columns
     assert "compare" in value_diff.columns
-    compare(["status"], base_df, compare_df)
+
+
+def test_reserved_column_names_error():
+    """Test that using reserved internal column names raises an appropriate error."""
+    base_df = pl.DataFrame({
+        "__pl_compare_value": [1, 2, 3],
+        "ID": [1, 2, 3],
+        "data": ["a", "b", "c"]
+    })
+    compare_df = pl.DataFrame({
+        "__pl_compare_status": ["x", "y", "z"],
+        "ID": [1, 2, 3],
+        "data": ["a", "b", "c"]
+    })
+    
+    # Test single reserved column
+    with pytest.raises(ValueError, match="Column name.*are reserved for internal use"):
+        compare(["ID"], base_df, compare_df)
+    
+    # Test multiple reserved columns
+    base_df_multi = pl.DataFrame({
+        "__pl_compare_value": [1, 2, 3],
+        "__pl_compare_base": [10, 20, 30],
+        "ID": [1, 2, 3]
+    })
+    
+    with pytest.raises(ValueError, match="Column name.*are reserved for internal use"):
+        compare(["ID"], base_df_multi, base_df_multi)
+    
+    # Test that the error message mentions the pattern
+    with pytest.raises(ValueError, match="All columns starting with '__pl_compare_' are reserved"):
+        compare(["ID"], base_df, compare_df)
+
+
+def test_reserved_column_names_error_specific_columns():
+    """Test error for each specific reserved column name."""
+    reserved_columns = [
+        "__pl_compare_in_base",
+        "__pl_compare_in_compare",
+        "__pl_compare_value",
+        "__pl_compare_variable",
+        "__pl_compare_base",
+        "__pl_compare_compare",
+        "__pl_compare_status"
+    ]
+    
+    for reserved_col in reserved_columns:
+        base_df = pl.DataFrame({
+            reserved_col: [1, 2, 3],
+            "ID": [1, 2, 3],
+            "data": ["a", "b", "c"]
+        })
+        compare_df = pl.DataFrame({
+            "ID": [1, 2, 3],
+            "data": ["a", "b", "c"]
+        })
+        
+        with pytest.raises(ValueError, match=f"Column name.*{reserved_col}.*are reserved"):
+            compare(["ID"], base_df, compare_df)

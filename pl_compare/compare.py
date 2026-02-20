@@ -650,6 +650,8 @@ class compare:
             set(base_lazy_df.collect().columns) | set(compare_lazy_df.collect().columns)
         )
 
+        # Check for reserved internal column names in user data
+
         column_mapping = _generate_column_mapping(
             all_user_columns,
             value_alias=value_alias,
@@ -657,6 +659,15 @@ class compare:
             base_alias=base_alias,
             compare_alias=compare_alias,
         )
+
+        reserved_columns = set(column_mapping.mapping.keys())        
+        conflicting_columns = reserved_columns.intersection(set(all_user_columns))
+        if conflicting_columns:
+            raise ValueError(
+                f"Column name(s) {conflicting_columns} are reserved for internal use. "
+                f"Please rename these columns in your dataframes. "
+                f"All columns starting with '__pl_compare_' are reserved."
+            )
 
         self._comparison_metadata = ComparisonMetadata(
             join_columns,
