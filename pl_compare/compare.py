@@ -154,7 +154,6 @@ def get_uncertain_row_count(df: pl.LazyFrame) -> int:
 
 
 def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
-    # Use internal column names from the column mapping object
     in_base_col = meta.column_mapping.in_base
     in_compare_col = meta.column_mapping.in_compare
     
@@ -209,7 +208,6 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
         on=meta.join_columns,
         how="anti",
     )
-    # The status column should contain the literal string "status" but be named with the variable alias
     return combined_table.select(
         meta.join_columns
         + [
@@ -223,7 +221,6 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     combined_table = meta.compare_df.select(meta.join_columns).join(
         meta.base_df.select(meta.join_columns), on=meta.join_columns, how="anti"
     )
-    # The status column should contain the literal string "status" but be named with the variable alias
     return combined_table.select(
         meta.join_columns
         + [
@@ -237,12 +234,11 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_only_rows = get_base_only_rows(meta).with_row_index()
     compare_only_rows = get_compare_only_rows(meta).with_row_index()
-    
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
     
-    result = (
+    return (
         pl.concat(
             [
                 base_only_rows,
@@ -252,8 +248,6 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         .sort("index")
         .drop("index")
     )
-    
-    return result
 
 
 def get_equality_check(
@@ -314,7 +308,6 @@ def get_combined_tables(
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
     )
-    # Use internal column names from column mapping
     in_base_col = column_mapping.in_base if column_mapping else "__pl_compare_in_base"
     in_compare_col = column_mapping.in_compare if column_mapping else "__pl_compare_in_compare"
     
