@@ -28,40 +28,19 @@ def _generate_column_mapping(
     Returns:
         Dictionary mapping internal column names to output column names
     """
-    # Define all internal columns and their output names
-    # This dict serves as both documentation and the source of truth
-    internal_columns = {
+    # Simple mapping: all internal columns use __pl_compare_ prefix
+    # This ensures no conflicts with user columns since internal names are unique
+    return {
         # Critical internal columns used in join operations
-        "in_base": "in_base",
-        "in_compare": "in_compare",
+        "__pl_compare_in_base": "in_base",
+        "__pl_compare_in_compare": "in_compare",
         # Output columns that appear in final results
-        "value": value_alias,
-        "variable": variable_alias,
-        "base": base_alias,
-        "compare": compare_alias,
-        "status": "status",  # status is used internally but appears as variable in output
+        "__pl_compare_value": value_alias,
+        "__pl_compare_variable": variable_alias,
+        "__pl_compare_base": base_alias,
+        "__pl_compare_compare": compare_alias,
+        "__pl_compare_status": "status",  # status is used internally but appears as variable in output
     }
-    
-    column_mapping = {}
-    internal_renames = {}  # Maps conflicting user columns to internal names
-
-    
-    # Build mapping for all internal columns
-    for internal_name, output_name in internal_columns.items():
-        column_mapping[internal_name] = output_name
-    
-    # Check for conflicts and create internal renames if needed
-    for output_name, internal_name in internal_columns.items():
-        if output_name in user_columns:
-            # Conflict detected - map user column to unique internal name
-            unique_internal_name = f"__pl_compare_{internal_name}"
-            internal_renames[output_name] = unique_internal_name
-    
-    # Store internal renames if any conflicts were found
-    if internal_renames:
-        column_mapping["__internal_column_renames__"] = internal_renames
-    
-    return column_mapping
 
 
 @dataclass
@@ -116,13 +95,9 @@ def get_uncertain_row_count(df: pl.LazyFrame) -> int:
 
 
 def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
-    # Use internal column names to avoid conflicts with user columns
-    in_base_col = "in_base"
-    in_compare_col = "in_compare"
-    if "__internal_column_renames__" in meta.column_mapping:
-        internal_renames = meta.column_mapping["__internal_column_renames__"]
-        in_base_col = internal_renames.get("in_base", "in_base")
-        in_compare_col = internal_renames.get("in_compare", "in_compare")
+    # Always use internal column names to avoid conflicts with user columns
+    in_base_col = "__pl_compare_in_base"
+    in_compare_col = "__pl_compare_in_compare"
     
     combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias(in_base_col)]).join(
         meta.compare_df.select(meta.join_columns + [pl.lit(True).alias(in_compare_col)]),
@@ -136,9 +111,6 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         .group_by([in_base_col, in_compare_col])
         .agg(pl.len().alias("Count"))
     )
-    # Use internal column names to avoid conflicts with user columns
-    in_base_col = meta.column_mapping.get("__internal_column_renames__", {}).get("in_base", "in_base")
-    in_compare_col = meta.column_mapping.get("__internal_column_renames__", {}).get("in_compare", "in_compare")
     
     base_only_rows = get_uncertain_row_count(
         grouped_rows.filter(pl.col(in_base_col) & pl.col(in_compare_col).is_null())
@@ -181,8 +153,8 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.get("status", "status")),
-            pl.lit(f"in {meta.base_alias} only").alias(meta.column_mapping.get("value", meta.value_alias)),
+            pl.lit("status").alias("__pl_compare_status"),
+            pl.lit(f"in {meta.base_alias} only").alias("__pl_compare_value"),
         ]
     )
 
@@ -194,8 +166,8 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.get("status", meta.variable_alias)),
-            pl.lit(f"in {meta.compare_alias} only").alias(meta.column_mapping.get("value", meta.value_alias)),
+            pl.lit("status").alias("__pl_compare_status"),
+            pl.lit(f"in {meta.compare_alias} only").alias("__pl_compare_value"),
         ]
     )
 
@@ -220,10 +192,17 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     )
     
     # Rename internal columns to final output names
-    # Only rename the internal status column, not the user's value column
-    internal_status_col = meta.column_mapping.get("status", meta.variable_alias)
+    internal_status_col = "__pl_compare_status"
+    internal_value_col = "__pl_compare_value"
+    
+    rename_mapping = {}
     if internal_status_col != meta.variable_alias:
-        result = result.rename({internal_status_col: meta.variable_alias})
+        rename_mapping[internal_status_col] = meta.variable_alias
+    if internal_value_col != meta.value_alias:
+        rename_mapping[internal_value_col] = meta.value_alias
+        
+    if rename_mapping:
+        result = result.rename(rename_mapping)
     
     return result
 
@@ -280,7 +259,6 @@ def get_combined_tables(
     how_join: Literal["inner", "full"] = "inner",
     resolution: Union[float, None] = None,
     validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
-    column_mapping: Optional[Dict[str, str]] = None,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
@@ -289,10 +267,9 @@ def get_combined_tables(
     # Use internal column names to avoid conflicts with user columns
     in_base_col = "in_base"
     in_compare_col = "in_compare"
-    if column_mapping and "__internal_column_renames__" in column_mapping:
-        internal_renames = column_mapping["__internal_column_renames__"]
-        in_base_col = internal_renames.get("in_base", "in_base")
-        in_compare_col = internal_renames.get("in_compare", "in_compare")
+    # Always use the prefixed internal column names
+    in_base_col = "__pl_compare_in_base"
+    in_compare_col = "__pl_compare_in_compare"
     
     compare_df = base_df.with_columns([pl.lit(True).alias(in_base_col)]).join(
         compare_df.with_columns([pl.lit(True).alias(in_compare_col)]),
@@ -399,7 +376,6 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         coalesce=coalesce,
         how_join=how_join,
         validate=meta.validate,
-        column_mapping=meta.column_mapping,
     )
     temp = combined_tables.with_columns(
         [
@@ -416,8 +392,8 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     )
 
     # Use internal column names for unpivot to avoid conflicts
-    internal_variable_col = meta.column_mapping.get("variable", meta.variable_alias)
-    internal_value_col = meta.column_mapping.get("value", meta.value_alias)
+    internal_variable_col = "__pl_compare_variable"
+    internal_value_col = "__pl_compare_value"
     
     melted_df = temp.unpivot(
         index=meta.join_columns,
@@ -432,10 +408,10 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
             melted_df.with_columns(
                 pl.col(internal_value_col)
                 .str.json_path_match(f"$.{meta.base_alias}")
-                .alias(meta.column_mapping.get("base", meta.base_alias)),
+                .alias("__pl_compare_base"),
                 pl.col(internal_value_col)
                 .str.json_path_match(f"$.{meta.compare_alias}")
-                .alias(meta.column_mapping.get("compare", meta.compare_alias)),
+                .alias("__pl_compare_compare"),
                 pl.col(internal_value_col).str.json_path_match("$.has_diff").alias("has_diff"),
             )
             .drop([internal_value_col])
@@ -447,15 +423,18 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     result = melted_df.collect()
     
     # Rename internal columns to final output names
-    internal_variable_col = meta.column_mapping.get("variable", meta.variable_alias)
-    internal_base_col = meta.column_mapping.get("base", meta.base_alias)
-    internal_compare_col = meta.column_mapping.get("compare", meta.compare_alias)
+    internal_variable_col = "__pl_compare_variable"
+    internal_base_col = "__pl_compare_base"
+    internal_compare_col = "__pl_compare_compare"
     
-    result = result.rename({
-        internal_variable_col: meta.variable_alias,
-        internal_base_col: meta.base_alias,
-        internal_compare_col: meta.compare_alias
-    })
+    rename_mapping = {internal_variable_col: meta.variable_alias}
+    # Only add base and compare column renames if they exist in the result
+    if internal_base_col in result.columns:
+        rename_mapping[internal_base_col] = meta.base_alias
+    if internal_compare_col in result.columns:
+        rename_mapping[internal_compare_col] = meta.compare_alias
+    
+    result = result.rename(rename_mapping)
     
     return result
 
@@ -506,7 +485,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             schema_comparison=True,
             hide_empty_stats=False,
             validate="1:1",
-            column_mapping=meta.column_mapping,  # Use the same column mapping
+            column_mapping=meta.column_mapping,
         )
     ).drop(meta.variable_alias)
 
