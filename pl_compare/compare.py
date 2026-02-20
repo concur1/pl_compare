@@ -297,30 +297,29 @@ def get_combined_tables(
     base_df: pl.LazyFrame,
     compare_df: pl.LazyFrame,
     compare_columns: Dict[str, Union[DataTypeClass, pl.DataType]],
-    equality_check: Union[Callable[[str, Union[pl.DataType, DataTypeClass]], pl.Expr], None],
-    coalesce: bool,
+    meta: ComparisonMetadata,
     how_join: Literal["inner", "full"] = "inner",
-    resolution: Union[float, None] = None,
-    validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
-    column_mapping: Optional[ColumnMapping] = None,
+    coalesce: bool = False,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
     )
-    in_base_col = column_mapping.in_base if column_mapping else "__pl_compare_in_base"
-    in_compare_col = column_mapping.in_compare if column_mapping else "__pl_compare_in_compare"
+    
+    # Get column names directly from meta's column mapping
+    in_base_col = meta.column_mapping.in_base
+    in_compare_col = meta.column_mapping.in_compare
     
     compare_df = base_df.with_columns([pl.lit(True).alias(in_base_col)]).join(
         compare_df.with_columns([pl.lit(True).alias(in_compare_col)]),
         on=join_columns,
         how=how_join,
         coalesce=coalesce,
-        validate=validate,
+        validate="1:1",
     )
     return compare_df.with_columns(
         [
-            get_equality_check(equality_check, resolution, col, format).alias(f"{col}_has_diff")
+            get_equality_check(meta.equality_check, meta.resolution, col, format).alias(f"{col}_has_diff")
             for col, format in compare_columns.items()
         ]
     )
@@ -413,12 +412,9 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         meta.base_df,
         meta.compare_df,
         compare_columns,
-        meta.equality_check,
-        resolution=meta.resolution,
-        coalesce=coalesce,
+        meta,
         how_join=how_join,
-        validate=meta.validate,
-        column_mapping=meta.column_mapping,
+        coalesce=coalesce,
     )
     temp = combined_tables.with_columns(
         [
