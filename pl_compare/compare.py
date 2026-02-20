@@ -76,8 +76,6 @@ class ComparisonMetadata:
     sample_limit: Optional[int]
     base_alias: str
     compare_alias: str
-    value_alias: str
-    variable_alias: str
     schema_comparison: bool
     hide_empty_stats: bool
     validate: Literal["m:m", "m:1", "1:m", "1:1"]
@@ -216,10 +214,13 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     internal_value_col = meta.column_mapping.value
     
     rename_mapping = {}
-    if internal_status_col != meta.variable_alias:
-        rename_mapping[internal_status_col] = meta.variable_alias
-    if internal_value_col != meta.value_alias:
-        rename_mapping[internal_value_col] = meta.value_alias
+    variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
+    value_alias = meta.column_mapping.mapping[meta.column_mapping.value]
+    
+    if internal_status_col != variable_alias:
+        rename_mapping[internal_status_col] = variable_alias
+    if internal_value_col != value_alias:
+        rename_mapping[internal_value_col] = value_alias
         
     if rename_mapping:
         result = result.rename(rename_mapping)
@@ -306,11 +307,12 @@ def get_combined_tables(
 
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
     value_differences = get_column_value_differences(meta)
+    variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
     final_df = (
-        value_differences.group_by([meta.variable_alias])
+        value_differences.group_by([variable_alias])
         .agg(pl.sum("has_diff"))
-        .sort(meta.variable_alias, descending=False)
-        .rename({meta.variable_alias: "Value Differences", "has_diff": "Count"})
+        .sort(variable_alias, descending=False)
+        .rename({variable_alias: "Value Differences", "has_diff": "Count"})
     )
     total_value_comparisons = value_differences.select(
         pl.lit("Total Value Comparisons").alias("Value Differences"),
@@ -442,12 +444,16 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     result = melted_df.collect()
     
     # Rename internal columns to final output names using column mapping
-    rename_mapping = {internal_variable_col: meta.variable_alias}
+    variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
+    base_alias = meta.column_mapping.mapping[meta.column_mapping.base]
+    compare_alias = meta.column_mapping.mapping[meta.column_mapping.compare]
+    
+    rename_mapping = {internal_variable_col: variable_alias}
     # Only add base and compare column renames if they exist in the result
     if meta.column_mapping.base in result.columns:
-        rename_mapping[meta.column_mapping.base] = meta.base_alias
+        rename_mapping[meta.column_mapping.base] = base_alias
     if meta.column_mapping.compare in result.columns:
-        rename_mapping[meta.column_mapping.compare] = meta.compare_alias
+        rename_mapping[meta.column_mapping.compare] = compare_alias
     
     result = result.rename(rename_mapping)
     
@@ -459,7 +465,7 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFr
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
         # Use the final variable alias for grouping
-        variable_col = meta.variable_alias
+        variable_col = meta.column_mapping.mapping[meta.column_mapping.variable]
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
             .with_columns(
@@ -484,6 +490,12 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             "format": [str(val) for val in meta.compare_df.collect().schema.values()],
         }
     )
+    # For schema comparison, we need to create a new column mapping with format-specific aliases
+    format_column_mapping = _generate_column_mapping(
+        ["column"],  # Only the column join column
+        base_alias=f"{meta.base_alias}_format",
+        compare_alias=f"{meta.compare_alias}_format",
+    )
     return get_column_value_differences_filtered(
         ComparisonMetadata(
             join_columns=["column"],
@@ -495,27 +507,43 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             sample_limit=None,
             base_alias=f"{meta.base_alias}_format",
             compare_alias=f"{meta.compare_alias}_format",
-            value_alias=meta.value_alias,
-            variable_alias=meta.variable_alias,
             schema_comparison=True,
             hide_empty_stats=False,
             validate="1:1",
-            column_mapping=meta.column_mapping,
+            column_mapping=format_column_mapping,
         )
-    ).drop(meta.variable_alias)
+    ).drop("variable")  # Drop the variable column to match expected schema comparison format
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     schema_comparison = get_schema_comparison(meta)
-    schema_differences = (
-        schema_comparison.filter(
-            pl.col(f"{meta.base_alias}_format").is_not_null()
-            & pl.col(f"{meta.compare_alias}_format").is_not_null()
-            & (pl.col(f"{meta.base_alias}_format") != pl.col(f"{meta.compare_alias}_format"))
+    # The schema comparison now returns columns with just the aliases, not the _format suffix
+    base_format_col = f"{meta.base_alias}_format"
+    compare_format_col = f"{meta.compare_alias}_format"
+    
+    # Check if the old format columns exist, otherwise use the new format
+    schema_cols = schema_comparison.columns
+    if base_format_col in schema_cols and compare_format_col in schema_cols:
+        schema_differences = (
+            schema_comparison.filter(
+                pl.col(base_format_col).is_not_null()
+                & pl.col(compare_format_col).is_not_null()
+                & (pl.col(base_format_col) != pl.col(compare_format_col))
+            )
+            .select(pl.len().alias("Count"))
+            .item()
         )
-        .select(pl.len().alias("Count"))
-        .item()
-    )
+    else:
+        # New format: columns are just base_alias and compare_alias
+        schema_differences = (
+            schema_comparison.filter(
+                pl.col(meta.base_alias).is_not_null()
+                & pl.col(meta.compare_alias).is_not_null()
+                & (pl.col(meta.base_alias) != pl.col(meta.compare_alias))
+            )
+            .select(pl.len().alias("Count"))
+            .item()
+        )
     final_df = pl.LazyFrame(
         {
             "Statistic": [
@@ -662,8 +690,6 @@ class compare:
             sample_limit,
             base_alias,
             compare_alias,
-            value_alias,
-            variable_alias,
             False,
             hide_empty_stats,
             validate,
