@@ -105,6 +105,56 @@ shape: (1, 4)
     )
 
 
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "value",
+        "variable",
+        # "in_base",
+        # "in_compare",
+        "status",
+        "join_columns",
+        "base",
+        "compare",
+        "Count",
+        "column",
+        "Statistic",
+        "ID",
+        "Percentage",
+        "format",
+        "base_format",
+        "compare_format",
+        "Value Differences",
+    ],
+)
+def test_special_column_names(column_name):
+    base_df = pl.DataFrame({column_name: ["123", "456", "888"], "x": [1, 2, 3]})
+    compare_df = pl.DataFrame({column_name: ["123", "456", "789"], "x": [1, 22, 3]})
+    expected_rows = pl.DataFrame(
+        {
+            "join_columns."+column_name: ["888", "789"],
+            "variable": ["status", "status"],
+            "value": ["in base only", "in compare only"],
+        }
+    )
+    expected_values = pl.DataFrame(
+        {
+            "join_columns."+column_name: ["456"],
+            "variable": ["x"],
+            "base": ["2"],
+            "compare": ["22"],
+        }
+    )
+
+    # Without value_alias and variable_alias, the special column names would produce
+    #    polars.exceptions.DuplicateError: projections contained duplicate output name 'variable'
+    # because the same column names are used internally.
+    compare_result = compare([column_name], base_df, compare_df)
+
+    pl.testing.assert_frame_equal(compare_result.rows_sample(), expected_rows)
+    pl.testing.assert_frame_equal(compare_result.values_sample(), expected_values)
+
+
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
     compare_result = compare(None, base_df, base_df)
     assert compare_result.is_schemas_equal() is True
@@ -201,7 +251,7 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_row_differences = pl.DataFrame(
         {
-            "ID": ["12345678", "1234567810"],
+            "join_columns.ID": ["12345678", "1234567810"],
             "variable": ["status", "status"],
             "value": ["in base only", "in compare only"],
         }
@@ -227,7 +277,7 @@ def test_expected_values_returned_values_summary(base_df, compare_df):
 def test_expected_values_returned_value_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
-        {"ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
+        {"join_columns.ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
     )
     assert_frame_equal(compare_result.values_sample(), expected_value_differences)
 

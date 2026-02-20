@@ -105,7 +105,7 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
         how="anti",
     )
     return combined_table.select(
-        meta.join_columns
+        [pl.col(join_col).alias(f"join_columns.{join_col}") for join_col in meta.join_columns]
         + [pl.lit("status").alias("variable"), pl.lit(f"in {meta.base_alias} only").alias("value")]
     )
 
@@ -115,7 +115,7 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
         meta.base_df.select(meta.join_columns), on=meta.join_columns, how="anti"
     )
     return combined_table.select(
-        meta.join_columns
+        [pl.col(join_col).alias(f"join_columns.{join_col}") for join_col in meta.join_columns]
         + [
             pl.lit("status").alias("variable"),
             pl.lit(f"in {meta.compare_alias} only").alias("value"),
@@ -274,7 +274,7 @@ def get_columns_to_compare(
     columns_to_exclude: List[str] = []
     if not meta.schema_comparison:
         columns_to_exclude.extend(
-            get_schema_comparison(meta).select(pl.col("column")).to_series(0).to_list()
+            get_schema_comparison(meta).select(pl.col("join_columns.column").alias("column")).to_series(0).to_list()
         )
 
     return {
@@ -321,8 +321,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     melted_df = temp.unpivot(
         index=meta.join_columns,
         on=[col for col, format in compare_columns.items()],
-    )
-    # melted_df = melted_df.with_columns(pl.col("value").str.json_decode(dtype).alias("value"))
+    ).rename({join_col: f"join_columns.{join_col}" for join_col in meta.join_columns})
 
     if convert_to_dataframe(melted_df).height > 0 and len(compare_columns) > 0:
         melted_df = (
