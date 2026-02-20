@@ -53,14 +53,14 @@ def _generate_column_mapping(
             internal_column_renames[critical_col] = unique_internal_name
 
     
+    # Handle output columns - never rename them, use internal names if needed
     for internal_name, output_name in output_columns.items():
-        # If the output name conflicts with user columns, we need to handle it
         if output_name in user_columns:
-            # The user's column needs to be renamed to avoid conflict
-            user_column_renames[output_name] = f"join_columns.{output_name}"
-            
-            # For internal use, we can use the original output name since the user column is renamed
-            column_mapping[internal_name] = output_name
+            # Conflict detected - use a unique internal name for processing
+            # Output will still use the original name
+            unique_internal_name = f"__pl_compare_{internal_name}"
+            internal_column_renames[output_name] = unique_internal_name
+            column_mapping[internal_name] = output_name  # Output still uses original name
         else:
             # No conflict, use the same name for both internal and output
             column_mapping[internal_name] = output_name
@@ -68,10 +68,6 @@ def _generate_column_mapping(
     # Store internal column renames in the mapping
     if internal_column_renames:
         column_mapping["__internal_column_renames__"] = internal_column_renames
-    
-    # Store user column renames in the mapping with a special key
-    if user_column_renames:
-        column_mapping["__user_column_renames__"] = user_column_renames
     
     return column_mapping
 
@@ -193,7 +189,7 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.get("status", meta.variable_alias)),
+            pl.lit("status").alias(meta.column_mapping.get("status", "status")),
             pl.lit(f"in {meta.base_alias} only").alias(meta.column_mapping.get("value", meta.value_alias)),
         ]
     )
@@ -669,11 +665,8 @@ class compare:
             compare_alias=compare_alias,
         )
         
-        # Apply user column renames if needed (for non-join columns that conflict)
-        user_column_renames = column_mapping.get("__user_column_renames__", {})
-        if user_column_renames:
-            base_lazy_df = base_lazy_df.rename(user_column_renames)
-            compare_lazy_df = compare_lazy_df.rename(user_column_renames)
+        # No longer rename user columns - use internal names when there are conflicts
+        # This ensures output columns always have consistent names
         
         self._comparison_metadata = ComparisonMetadata(
             join_columns,
