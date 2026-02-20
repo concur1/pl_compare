@@ -269,12 +269,10 @@ def column_value_differences(
 def get_columns_to_compare(
     meta: ComparisonMetadata,
 ) -> Dict[str, Union[pl.DataType, DataTypeClass]]:
-    # if schema_comparison:
-    #    return ["format"]
     columns_to_exclude: List[str] = []
     if not meta.schema_comparison:
         columns_to_exclude.extend(
-            get_schema_comparison(meta).select(pl.col("join_columns.column").alias("column")).to_series(0).to_list()
+            get_schema_comparison(meta).select(pl.col("column").alias("column")).to_series(0).to_list()
         )
 
     return {
@@ -367,7 +365,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             "format": [str(val) for val in meta.compare_df.collect().schema.values()],
         }
     )
-    return get_column_value_differences_filtered(
+    result = get_column_value_differences_filtered(
         ComparisonMetadata(
             join_columns=["column"],
             base_df=base_df_schema,
@@ -383,6 +381,9 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             validate="1:1",
         )
     ).drop("variable")
+    if "join_columns.column" in result.columns:
+        result = result.rename({"join_columns.column": "column"})
+    return result
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
