@@ -5,6 +5,77 @@ import polars as pl
 from polars.datatypes.classes import DataTypeClass
 
 
+def _generate_column_mapping(
+    user_columns: List[str],
+    value_alias: str = "value",
+    variable_alias: str = "variable",
+    base_alias: str = "base",
+    compare_alias: str = "compare",
+) -> Dict[str, str]:
+    """
+    Generate a mapping of internal column names to output column names.
+    
+    This function checks if any of the internal column names conflict with user column names
+    and generates unique names for internal use while preserving the desired output names.
+    
+    Args:
+        user_columns: List of column names from user dataframes
+        value_alias: Desired output name for value column
+        variable_alias: Desired output name for variable column
+        base_alias: Desired output name for base column
+        compare_alias: Desired output name for compare column
+        
+    Returns:
+        Dictionary mapping internal column names to output column names
+    """
+    # List of output column names that need to be checked for conflicts
+    # Only these columns appear in the final output and need to be protected
+    output_columns = {
+        "value": value_alias,
+        "variable": variable_alias,
+        "base": base_alias,
+        "compare": compare_alias,
+        "status": "status",  # status is used internally but appears as variable in output
+    }
+    
+    # Internal columns that must never conflict (these are used in join operations)
+    critical_internal_columns = ["in_base", "in_compare"]
+    
+    column_mapping = {}
+    user_column_renames = {}  # For renaming user columns that conflict
+    internal_column_renames = {}  # For renaming internal columns that conflict
+    
+    # First handle critical internal columns that must never conflict
+    for critical_col in critical_internal_columns:
+        if critical_col in user_columns:
+            # Use a unique internal name for the critical column
+            unique_internal_name = f"__pl_compare_{critical_col}"
+            internal_column_renames[critical_col] = unique_internal_name
+
+    
+    for internal_name, output_name in output_columns.items():
+        # If the output name conflicts with user columns, we need to handle it
+        if output_name in user_columns:
+            # The user's column needs to be renamed to avoid conflict
+            user_column_renames[output_name] = f"join_columns.{output_name}"
+            
+            # For internal use, we can use the original output name since the user column is renamed
+            column_mapping[internal_name] = output_name
+        else:
+            # No conflict, use the same name for both internal and output
+            column_mapping[internal_name] = output_name
+    
+    # Store internal column renames in the mapping
+    if internal_column_renames:
+        column_mapping["__internal_column_renames__"] = internal_column_renames
+    
+    # Store user column renames in the mapping with a special key
+    if user_column_renames:
+        column_mapping["__user_column_renames__"] = user_column_renames
+    
+    return column_mapping
+
+
 @dataclass
 class ComparisonMetadata:
     """Class for holding the (meta)data used to generate the comparison dataframes."""
@@ -23,6 +94,7 @@ class ComparisonMetadata:
     schema_comparison: bool
     hide_empty_stats: bool
     validate: Literal["m:m", "m:1", "1:m", "1:1"]
+    column_mapping: Dict[str, str]
 
 
 def convert_to_dataframe(df: Union[pl.LazyFrame, pl.DataFrame]) -> pl.DataFrame:
@@ -56,30 +128,42 @@ def get_uncertain_row_count(df: pl.LazyFrame) -> int:
 
 
 def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
-    combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias("in_base")]).join(
-        meta.compare_df.select(meta.join_columns + [pl.lit(True).alias("in_compare")]),
+    # Use internal column names to avoid conflicts with user columns
+    in_base_col = "in_base"
+    in_compare_col = "in_compare"
+    if "__internal_column_renames__" in meta.column_mapping:
+        internal_renames = meta.column_mapping["__internal_column_renames__"]
+        in_base_col = internal_renames.get("in_base", "in_base")
+        in_compare_col = internal_renames.get("in_compare", "in_compare")
+    
+    combined_table = meta.base_df.select(meta.join_columns + [pl.lit(True).alias(in_base_col)]).join(
+        meta.compare_df.select(meta.join_columns + [pl.lit(True).alias(in_compare_col)]),
         on=meta.join_columns,
         how="full",
         coalesce=True,
         validate=meta.validate,
     )
     grouped_rows = (
-        combined_table.select(meta.join_columns + ["in_base", "in_compare"])
-        .group_by(["in_base", "in_compare"])
+        combined_table.select(meta.join_columns + [in_base_col, in_compare_col])
+        .group_by([in_base_col, in_compare_col])
         .agg(pl.len().alias("Count"))
     )
+    # Use internal column names to avoid conflicts with user columns
+    in_base_col = meta.column_mapping.get("__internal_column_renames__", {}).get("in_base", "in_base")
+    in_compare_col = meta.column_mapping.get("__internal_column_renames__", {}).get("in_compare", "in_compare")
+    
     base_only_rows = get_uncertain_row_count(
-        grouped_rows.filter(pl.col("in_base") & pl.col("in_compare").is_null())
+        grouped_rows.filter(pl.col(in_base_col) & pl.col(in_compare_col).is_null())
     )
     compare_only_rows = get_uncertain_row_count(
-        grouped_rows.filter(pl.col("in_base").is_null() & pl.col("in_compare"))
+        grouped_rows.filter(pl.col(in_base_col).is_null() & pl.col(in_compare_col))
     )
     shared_rows = get_uncertain_row_count(
         grouped_rows.filter(
-            pl.col("in_base")
-            & pl.col("in_base").is_not_null()
-            & pl.col("in_compare")
-            & pl.col("in_compare").is_not_null()
+            pl.col(in_base_col)
+            & pl.col(in_base_col).is_not_null()
+            & pl.col(in_compare_col)
+            & pl.col(in_compare_col).is_not_null()
         )
     )
     final_df = (
@@ -109,8 +193,8 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.variable_alias),
-            pl.lit(f"in {meta.base_alias} only").alias(meta.value_alias),
+            pl.lit("status").alias(meta.column_mapping.get("status", meta.variable_alias)),
+            pl.lit(f"in {meta.base_alias} only").alias(meta.column_mapping.get("value", meta.value_alias)),
         ]
     )
 
@@ -122,8 +206,8 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.variable_alias),
-            pl.lit(f"in {meta.compare_alias} only").alias(meta.value_alias),
+            pl.lit("status").alias(meta.column_mapping.get("status", meta.variable_alias)),
+            pl.lit(f"in {meta.compare_alias} only").alias(meta.column_mapping.get("value", meta.value_alias)),
         ]
     )
 
@@ -131,10 +215,12 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     base_only_rows = get_base_only_rows(meta).with_row_index()
     compare_only_rows = get_compare_only_rows(meta).with_row_index()
+    
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
-    return (
+    
+    result = (
         pl.concat(
             [
                 base_only_rows,
@@ -144,6 +230,14 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
         .sort("index")
         .drop("index")
     )
+    
+    # Rename internal columns to final output names
+    # Only rename the internal status column, not the user's value column
+    internal_status_col = meta.column_mapping.get("status", meta.variable_alias)
+    if internal_status_col != meta.variable_alias:
+        result = result.rename({internal_status_col: meta.variable_alias})
+    
+    return result
 
 
 def get_equality_check(
@@ -198,13 +292,22 @@ def get_combined_tables(
     how_join: Literal["inner", "full"] = "inner",
     resolution: Union[float, None] = None,
     validate: Literal["m:m", "m:1", "1:m", "1:1"] = "1:1",
+    column_mapping: Optional[Dict[str, str]] = None,
 ) -> pl.LazyFrame:
     base_df = base_df.rename({col: f"{col}_base" for col, format in compare_columns.items()})
     compare_df = compare_df.rename(
         {col: f"{col}_compare" for col, format in compare_columns.items()}
     )
-    compare_df = base_df.with_columns([pl.lit(True).alias("in_base")]).join(
-        compare_df.with_columns([pl.lit(True).alias("in_compare")]),
+    # Use internal column names to avoid conflicts with user columns
+    in_base_col = "in_base"
+    in_compare_col = "in_compare"
+    if column_mapping and "__internal_column_renames__" in column_mapping:
+        internal_renames = column_mapping["__internal_column_renames__"]
+        in_base_col = internal_renames.get("in_base", "in_base")
+        in_compare_col = internal_renames.get("in_compare", "in_compare")
+    
+    compare_df = base_df.with_columns([pl.lit(True).alias(in_base_col)]).join(
+        compare_df.with_columns([pl.lit(True).alias(in_compare_col)]),
         on=join_columns,
         how=how_join,
         coalesce=coalesce,
@@ -308,6 +411,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         coalesce=coalesce,
         how_join=how_join,
         validate=meta.validate,
+        column_mapping=meta.column_mapping,
     )
     temp = combined_tables.with_columns(
         [
@@ -323,41 +427,61 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         ]
     )
 
+    # Use internal column names for unpivot to avoid conflicts
+    internal_variable_col = meta.column_mapping.get("variable", meta.variable_alias)
+    internal_value_col = meta.column_mapping.get("value", meta.value_alias)
+    
     melted_df = temp.unpivot(
         index=meta.join_columns,
         on=[col for col, format in compare_columns.items()],
-        variable_name=meta.variable_alias,
-        value_name=meta.value_alias,
+        variable_name=internal_variable_col,
+        value_name=internal_value_col,
     )
 
     if convert_to_dataframe(melted_df).height > 0 and len(compare_columns) > 0:
+        # Use internal column names for processing
         melted_df = (
             melted_df.with_columns(
-                pl.col(meta.value_alias)
+                pl.col(internal_value_col)
                 .str.json_path_match(f"$.{meta.base_alias}")
-                .alias(meta.base_alias),
-                pl.col(meta.value_alias)
+                .alias(meta.column_mapping.get("base", meta.base_alias)),
+                pl.col(internal_value_col)
                 .str.json_path_match(f"$.{meta.compare_alias}")
-                .alias(meta.compare_alias),
-                pl.col(meta.value_alias).str.json_path_match("$.has_diff").alias("has_diff"),
+                .alias(meta.column_mapping.get("compare", meta.compare_alias)),
+                pl.col(internal_value_col).str.json_path_match("$.has_diff").alias("has_diff"),
             )
-            .drop([meta.value_alias])
+            .drop([internal_value_col])
             .with_columns(pl.col("has_diff").replace_strict({"false": False, "true": True}))
         )
     else:
         melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
 
-    return melted_df.collect()
+    result = melted_df.collect()
+    
+    # Rename internal columns to final output names
+    internal_variable_col = meta.column_mapping.get("variable", meta.variable_alias)
+    internal_base_col = meta.column_mapping.get("base", meta.base_alias)
+    internal_compare_col = meta.column_mapping.get("compare", meta.compare_alias)
+    
+    result = result.rename({
+        internal_variable_col: meta.variable_alias,
+        internal_base_col: meta.base_alias,
+        internal_compare_col: meta.compare_alias
+    })
+    
+    return result
 
 
 def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFrame:
     df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
+        # Use the final variable alias for grouping
+        variable_col = meta.variable_alias
         filtered_df = (
             filtered_df.with_columns(pl.lit(1).alias("ones"))
             .with_columns(
-                pl.col("ones").cum_sum().over(meta.variable_alias).alias("rows_sample_number")
+                pl.col("ones").cum_sum().over(variable_col).alias("rows_sample_number")
             )
             .filter(pl.col("rows_sample_number") <= pl.lit(meta.sample_limit))
             .drop("ones", "rows_sample_number")
@@ -394,6 +518,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             schema_comparison=True,
             hide_empty_stats=False,
             validate="1:1",
+            column_mapping=meta.column_mapping,  # Use the same column mapping
         )
     ).drop(meta.variable_alias)
 
@@ -516,6 +641,35 @@ class compare:
             )
             join_columns = ["row_number"]
 
+        # Get all user column names from both dataframes
+        base_columns = base_lazy_df.collect().columns
+        compare_columns = compare_lazy_df.collect().columns
+        all_user_columns = list(set(base_columns) | set(compare_columns))
+        
+        # Generate column mapping to handle conflicts
+        column_mapping = _generate_column_mapping(
+            all_user_columns,
+            value_alias=value_alias,
+            variable_alias=variable_alias,
+            base_alias=base_alias,
+            compare_alias=compare_alias,
+        )
+        
+        # Apply user column renames if needed
+        user_column_renames = column_mapping.get("__user_column_renames__", {})
+        if user_column_renames:
+            base_lazy_df = base_lazy_df.rename(user_column_renames)
+            compare_lazy_df = compare_lazy_df.rename(user_column_renames)
+            
+            # Update join_columns if they were renamed
+            updated_join_columns = []
+            for col in join_columns:
+                if col in user_column_renames:
+                    updated_join_columns.append(user_column_renames[col])
+                else:
+                    updated_join_columns.append(col)
+            join_columns = updated_join_columns
+        
         self._comparison_metadata = ComparisonMetadata(
             join_columns,
             base_lazy_df,
@@ -531,6 +685,7 @@ class compare:
             False,
             hide_empty_stats,
             validate,
+            column_mapping,
         )
         self._created_frames: Dict[str, Union[pl.DataFrame, pl.LazyFrame]] = {}
 

@@ -105,21 +105,48 @@ shape: (1, 4)
     )
 
 
-@pytest.mark.parametrize("column_name", ["value", "variable"])
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "value",
+        "variable",
+        "in_base",
+        "in_compare",
+        "status",
+        "join_columns",
+        "base",
+        "compare",
+        "Count",
+        "column",
+        "Statistic",
+        "ID",
+        "Percentage",
+        "format",
+        "base_format",
+        "compare_format",
+        "Value Differences",
+    ],
+)
 def test_special_column_names(column_name):
     base_df = pl.DataFrame({column_name: ["123", "456", "888"], "x": [1, 2, 3]})
     compare_df = pl.DataFrame({column_name: ["123", "456", "789"], "x": [1, 22, 3]})
+    # For columns that don't conflict with internal names, they won't be prefixed
+    if column_name in ["value", "variable", "status", "base", "compare"]:
+        join_col = f"join_columns.{column_name}"
+    else:
+        join_col = column_name
+    
     expected_rows = pl.DataFrame(
         {
-            column_name: ["888", "789"],
-            "-variable": ["status", "status"],
-            "-value": ["in base only", "in compare only"],
+            join_col: ["888", "789"],
+            "variable": ["status", "status"],
+            "value": ["in base only", "in compare only"],
         }
     )
     expected_values = pl.DataFrame(
         {
-            column_name: ["456"],
-            "-variable": ["x"],
+            join_col: ["456"],
+            "variable": ["x"],
             "base": ["2"],
             "compare": ["22"],
         }
@@ -128,9 +155,7 @@ def test_special_column_names(column_name):
     # Without value_alias and variable_alias, the special column names would produce
     #    polars.exceptions.DuplicateError: projections contained duplicate output name 'variable'
     # because the same column names are used internally.
-    compare_result = compare(
-        [column_name], base_df, compare_df, value_alias="-value", variable_alias="-variable"
-    )
+    compare_result = compare([column_name], base_df, compare_df)
 
     pl.testing.assert_frame_equal(compare_result.rows_sample(), expected_rows)
     pl.testing.assert_frame_equal(compare_result.values_sample(), expected_values)
