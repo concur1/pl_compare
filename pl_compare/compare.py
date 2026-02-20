@@ -46,17 +46,16 @@ def _generate_column_mapping(
     internal_renames = {}  # Maps conflicting user columns to internal names
 
     
-    # Process each internal column
+    # Build mapping for all internal columns
     for internal_name, output_name in internal_columns.items():
+        column_mapping[internal_name] = output_name
+    
+    # Check for conflicts and create internal renames if needed
+    for output_name, internal_name in internal_columns.items():
         if output_name in user_columns:
-            # Conflict detected - use unique internal name
+            # Conflict detected - map user column to unique internal name
             unique_internal_name = f"__pl_compare_{internal_name}"
             internal_renames[output_name] = unique_internal_name
-            # Output still uses the original name, internal processing uses unique name
-            column_mapping[internal_name] = output_name
-        else:
-            # No conflict - use the same name for both internal and output
-            column_mapping[internal_name] = output_name
     
     # Store internal renames if any conflicts were found
     if internal_renames:
