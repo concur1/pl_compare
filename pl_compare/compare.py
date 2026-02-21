@@ -52,9 +52,6 @@ def apply_column_renames(func: Callable):
     return wrapper
 
 
-from dataclasses import dataclass
-
-
 @dataclass
 class ColumnMapping:
     """Class for holding internal column names and their mappings to output names."""

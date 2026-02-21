@@ -673,7 +673,7 @@ def test_usage_of_status_column():
     )
 
     # This should not cause an error
-    compare_result = compare(["status"], base_df, compare_df)
+    compare(["status"], base_df, compare_df)
 
 
 def test_column_aliases_in_metadata():
