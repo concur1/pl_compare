@@ -769,31 +769,25 @@ def test_column_aliases_with_special_names():
 
 def test_reserved_column_names_error():
     """Test that using reserved internal column names raises an appropriate error."""
-    base_df = pl.DataFrame({
-        "__pl_compare_value": [1, 2, 3],
-        "ID": [1, 2, 3],
-        "data": ["a", "b", "c"]
-    })
-    compare_df = pl.DataFrame({
-        "__pl_compare_status": ["x", "y", "z"],
-        "ID": [1, 2, 3],
-        "data": ["a", "b", "c"]
-    })
-    
+    base_df = pl.DataFrame(
+        {"__pl_compare_value": [1, 2, 3], "ID": [1, 2, 3], "data": ["a", "b", "c"]}
+    )
+    compare_df = pl.DataFrame(
+        {"__pl_compare_status": ["x", "y", "z"], "ID": [1, 2, 3], "data": ["a", "b", "c"]}
+    )
+
     # Test single reserved column
     with pytest.raises(ValueError, match="Column name.*are reserved for internal use"):
         compare(["ID"], base_df, compare_df)
-    
+
     # Test multiple reserved columns
-    base_df_multi = pl.DataFrame({
-        "__pl_compare_value": [1, 2, 3],
-        "__pl_compare_base": [10, 20, 30],
-        "ID": [1, 2, 3]
-    })
-    
+    base_df_multi = pl.DataFrame(
+        {"__pl_compare_value": [1, 2, 3], "__pl_compare_base": [10, 20, 30], "ID": [1, 2, 3]}
+    )
+
     with pytest.raises(ValueError, match="Column name.*are reserved for internal use"):
         compare(["ID"], base_df_multi, base_df_multi)
-    
+
     # Test that the error message mentions the pattern
     with pytest.raises(ValueError, match="All columns starting with '__pl_compare_' are reserved"):
         compare(["ID"], base_df, compare_df)
@@ -808,20 +802,13 @@ def test_reserved_column_names_error_specific_columns():
         "__pl_compare_variable",
         "__pl_compare_base",
         "__pl_compare_compare",
-        "__pl_compare_status"
+        "__pl_compare_status",
     ]
-    
+
     for reserved_col in reserved_columns:
-        base_df = pl.DataFrame({
-            reserved_col: [1, 2, 3],
-            "ID": [1, 2, 3],
-            "data": ["a", "b", "c"]
-        })
-        compare_df = pl.DataFrame({
-            "ID": [1, 2, 3],
-            "data": ["a", "b", "c"]
-        })
-        
+        base_df = pl.DataFrame({reserved_col: [1, 2, 3], "ID": [1, 2, 3], "data": ["a", "b", "c"]})
+        compare_df = pl.DataFrame({"ID": [1, 2, 3], "data": ["a", "b", "c"]})
+
         with pytest.raises(ValueError, match=f"Column name.*{reserved_col}.*are reserved"):
             compare(["ID"], base_df, compare_df)
 
@@ -829,20 +816,20 @@ def test_reserved_column_names_error_specific_columns():
 def test_apply_column_renames_type_error():
     """Test that @apply_column_renames raises TypeError for non-DataFrame/LazyFrame results."""
     from pl_compare.compare import apply_column_renames, ComparisonMetadata, ColumnMapping
-    
+
     # Create a mock function that returns an invalid type
     @apply_column_renames
     def mock_function_returns_string(meta: ComparisonMetadata):
         return "invalid_result"
-    
-    @apply_column_renames  
+
+    @apply_column_renames
     def mock_function_returns_int(meta: ComparisonMetadata):
         return 42
-    
+
     @apply_column_renames
     def mock_function_returns_list(meta: ComparisonMetadata):
         return [1, 2, 3]
-    
+
     # Create a mock metadata object
     mock_meta = ComparisonMetadata(
         join_columns=["ID"],
@@ -857,18 +844,17 @@ def test_apply_column_renames_type_error():
         schema_comparison=False,
         hide_empty_stats=False,
         validate="m:m",
-        column_mapping=ColumnMapping(mapping={"__pl_compare_value": "value"})
+        column_mapping=ColumnMapping(mapping={"__pl_compare_value": "value"}),
     )
-    
+
     # Test string result
     with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
         mock_function_returns_string(mock_meta)
-    
+
     # Test int result
     with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
         mock_function_returns_int(mock_meta)
-    
+
     # Test list result
     with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
         mock_function_returns_list(mock_meta)
-    

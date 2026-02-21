@@ -33,20 +33,18 @@ def apply_column_renames(func: Callable):
         if isinstance(result, pl.LazyFrame):
             result_columns = result.collect_schema().names()
             rename_mapping = {}
-            
-               
+
         if isinstance(result, pl.DataFrame):
             result_columns = result.columns
             rename_mapping = {}
-            
+
         for internal_col, output_col in meta.column_mapping.mapping.items():
             if internal_col in result_columns and internal_col != output_col:
                 rename_mapping[internal_col] = output_col
-        
+
         if rename_mapping:
             result = result.rename(rename_mapping)
 
-                
         return result
 
     return wrapper
@@ -668,7 +666,7 @@ class compare:
             compare_alias=compare_alias,
         )
 
-        reserved_columns = set(column_mapping.mapping.keys())        
+        reserved_columns = set(column_mapping.mapping.keys())
         conflicting_columns = reserved_columns.intersection(set(all_user_columns))
         if conflicting_columns:
             raise ValueError(
