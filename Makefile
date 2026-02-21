@@ -14,11 +14,11 @@ format: ## Formats the files with ruff and black
 
 .PHONY: check
 check: ## Runs checks using ruff, black, mypy and pytest
-	-ruff check $(SRCPATH)
-	-black --check $(SRCPATH)
-	-mypy --strict pl_compare/compare.py
-	-pytest --doctest-glob="README.md" -v
+	ruff check $(SRCPATH)
+	black --check $(SRCPATH)
+	mypy --strict pl_compare/compare.py
+	pytest --doctest-glob="README.md" -v
 
 .PHONY: test
 test: ## Runs tests
-	-pytest --doctest-glob="README.md" -s
+	pytest --doctest-glob="README.md" -v

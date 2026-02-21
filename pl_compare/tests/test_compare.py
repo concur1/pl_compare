@@ -73,14 +73,14 @@ shape: (5, 2)
 │ Rows in test and other ┆ 2     │
 └────────────────────────┴───────┘
 shape: (2, 3)
-┌────────────┬──────────┬───────────────┐
-│ ID         ┆ variable ┆ value         │
-│ ---        ┆ ---      ┆ ---           │
-│ str        ┆ str      ┆ str           │
-╞════════════╪══════════╪═══════════════╡
-│ 12345678   ┆ status   ┆ in test only  │
-│ 1234567810 ┆ status   ┆ in other only │
-└────────────┴──────────┴───────────────┘""" in str(
+┌─────────────────┬──────────┬───────────────┐
+│ join_columns.ID ┆ variable ┆ value         │
+│ ---             ┆ ---      ┆ ---           │
+│ str             ┆ str      ┆ str           │
+╞═════════════════╪══════════╪═══════════════╡
+│ 12345678        ┆ status   ┆ in test only  │
+│ 1234567810      ┆ status   ┆ in other only │
+└─────────────────┴──────────┴───────────────┘""" in str(
         compare_result.report()
     )
     assert """VALUE DIFFERENCES:
@@ -94,32 +94,56 @@ shape: (2, 3)
 │ Example1                ┆ 1     ┆ 50.0       │
 └─────────────────────────┴───────┴────────────┘
 shape: (1, 4)
-┌─────────┬──────────┬──────┬───────┐
-│ ID      ┆ variable ┆ test ┆ other │
-│ ---     ┆ ---      ┆ ---  ┆ ---   │
-│ str     ┆ str      ┆ str  ┆ str   │
-╞═════════╪══════════╪══════╪═══════╡
-│ 1234567 ┆ Example1 ┆ 6    ┆ 2     │
-└─────────┴──────────┴──────┴───────┘""" in str(
+┌─────────────────┬──────────┬──────┬───────┐
+│ join_columns.ID ┆ variable ┆ test ┆ other │
+│ ---             ┆ ---      ┆ ---  ┆ ---   │
+│ str             ┆ str      ┆ str  ┆ str   │
+╞═════════════════╪══════════╪══════╪═══════╡
+│ 1234567         ┆ Example1 ┆ 6    ┆ 2     │
+└─────────────────┴──────────┴──────┴───────┘""" in str(
         compare_result.report()
     )
 
 
-@pytest.mark.parametrize("column_name", ["value", "variable"])
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "value",
+        "variable",
+        "in_base",
+        "in_compare",
+        "status",
+        "join_columns",
+        "base",
+        "compare",
+        "Count",
+        "column",
+        "Statistic",
+        "ID",
+        "Percentage",
+        "format",
+        "base_format",
+        "compare_format",
+        "Value Differences",
+    ],
+)
 def test_special_column_names(column_name):
     base_df = pl.DataFrame({column_name: ["123", "456", "888"], "x": [1, 2, 3]})
     compare_df = pl.DataFrame({column_name: ["123", "456", "789"], "x": [1, 22, 3]})
+    # With consistent join column prefixing, ALL join columns are always prefixed
+    join_col = f"join_columns.{column_name}"
+
     expected_rows = pl.DataFrame(
         {
-            column_name: ["888", "789"],
-            "-variable": ["status", "status"],
-            "-value": ["in base only", "in compare only"],
+            join_col: ["888", "789"],
+            "variable": ["status", "status"],
+            "value": ["in base only", "in compare only"],
         }
     )
     expected_values = pl.DataFrame(
         {
-            column_name: ["456"],
-            "-variable": ["x"],
+            join_col: ["456"],
+            "variable": ["x"],
             "base": ["2"],
             "compare": ["22"],
         }
@@ -128,12 +152,34 @@ def test_special_column_names(column_name):
     # Without value_alias and variable_alias, the special column names would produce
     #    polars.exceptions.DuplicateError: projections contained duplicate output name 'variable'
     # because the same column names are used internally.
-    compare_result = compare(
-        [column_name], base_df, compare_df, value_alias="-value", variable_alias="-variable"
-    )
+    compare_result = compare([column_name], base_df, compare_df)
 
+    # Test multiple methods that use column aliases
     pl.testing.assert_frame_equal(compare_result.rows_sample(), expected_rows)
     pl.testing.assert_frame_equal(compare_result.values_sample(), expected_values)
+
+    schemas_sample = compare_result.schemas_sample()
+    assert "column" in schemas_sample.columns
+
+    rows_summary = compare_result.rows_summary()
+    assert rows_summary.height > 0
+    assert "Statistic" in rows_summary.columns
+    assert "Count" in rows_summary.columns
+
+    values_summary = compare_result.values_summary()
+    assert values_summary.height > 0
+    assert "Value Differences" in values_summary.columns
+    assert "Count" in values_summary.columns
+    assert "Percentage" in values_summary.columns
+
+    summary = compare_result.summary()
+    assert summary.height > 0
+    assert "Statistic" in summary.columns
+    assert "Count" in summary.columns
+
+    assert compare_result.is_rows_equal() is False  # Rows differ
+    assert compare_result.is_values_equal() is False  # Values differ
+    assert compare_result.is_equal() is False  # Overall not equal
 
 
 def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_df):
@@ -232,7 +278,7 @@ def test_expected_values_returned_row_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_row_differences = pl.DataFrame(
         {
-            "ID": ["12345678", "1234567810"],
+            "join_columns.ID": ["12345678", "1234567810"],
             "variable": ["status", "status"],
             "value": ["in base only", "in compare only"],
         }
@@ -258,7 +304,7 @@ def test_expected_values_returned_values_summary(base_df, compare_df):
 def test_expected_values_returned_value_differences(base_df, compare_df):
     compare_result = compare(["ID"], base_df, compare_df)
     expected_value_differences = pl.DataFrame(
-        {"ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
+        {"join_columns.ID": ["1234567"], "variable": ["Example1"], "base": ["6"], "compare": ["2"]}
     )
     assert_frame_equal(compare_result.values_sample(), expected_value_differences)
 
@@ -465,10 +511,10 @@ def test_error_raised_when_dupes_supplied_for_1_1_validation():
     with pytest.raises(pl.exceptions.ComputeError):
         compare(["ID"], compare_df, base_df, validate="m:1").rows_summary()
 
-    compare(["ID", "ID2"], base_df, compare_df, "m:1").values_summary()
-    compare(["ID", "ID2"], base_df, compare_df, "m:1").rows_summary()
-    compare(["ID", "ID2"], compare_df, base_df, "1:m").values_summary()
-    compare(["ID", "ID2"], compare_df, base_df, "1:m").rows_summary()
+    compare(["ID", "ID2"], base_df, compare_df, validate="m:1").values_summary()
+    compare(["ID", "ID2"], base_df, compare_df, validate="m:1").rows_summary()
+    compare(["ID", "ID2"], compare_df, base_df, validate="1:m").values_summary()
+    compare(["ID", "ID2"], compare_df, base_df, validate="1:m").rows_summary()
 
 
 def test_for_single_column_table_columns():
@@ -529,15 +575,17 @@ shape: (5, 2)
 │ Rows in base and compare ┆ 2     │
 └──────────────────────────┴───────┘
 shape: (3, 6)
-┌────────────┬────────────┬────────────┬────────────┬──────────┬─────────────────┐
-│ ID         ┆ ID2        ┆ ID3        ┆ ID4        ┆ variable ┆ value           │
-│ ---        ┆ ---        ┆ ---        ┆ ---        ┆ ---      ┆ ---             │
-│ str        ┆ str        ┆ str        ┆ str        ┆ str      ┆ str             │
-╞════════════╪════════════╪════════════╪════════════╪══════════╪═════════════════╡
-│ 123456     ┆ 123457     ┆ 123457     ┆ 123457     ┆ status   ┆ in base only    │
-│ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ 1234567810 ┆ status   ┆ in compare only │
-│ 12345678   ┆ 12345678   ┆ 12345678   ┆ 12345678   ┆ status   ┆ in base only    │
-└────────────┴────────────┴────────────┴────────────┴──────────┴─────────────────┘
+┌─────────────────┬─────────────────┬─────────────────┬────────────────┬──────────┬────────────────┐
+│ join_columns.ID ┆ join_columns.ID ┆ join_columns.ID ┆ join_columns.I ┆ variable ┆ value          │
+│ ---             ┆ 2               ┆ 3               ┆ D4             ┆ ---      ┆ ---            │
+│ str             ┆ ---             ┆ ---             ┆ ---            ┆ str      ┆ str            │
+│                 ┆ str             ┆ str             ┆ str            ┆          ┆                │
+╞═════════════════╪═════════════════╪═════════════════╪════════════════╪══════════╪════════════════╡
+│ 123456          ┆ 123457          ┆ 123457          ┆ 123457         ┆ status   ┆ in base only   │
+│ 1234567810      ┆ 1234567810      ┆ 1234567810      ┆ 1234567810     ┆ status   ┆ in compare     │
+│                 ┆                 ┆                 ┆                ┆          ┆ only           │
+│ 12345678        ┆ 12345678        ┆ 12345678        ┆ 12345678       ┆ status   ┆ in base only   │
+└─────────────────┴─────────────────┴─────────────────┴────────────────┴──────────┴────────────────┘
 """ in str(
         comp.report()
     )
@@ -626,3 +674,187 @@ def test_usage_of_status_column():
 
     # This should not cause an error
     compare(["status"], base_df, compare_df)
+
+
+def test_column_aliases_in_metadata():
+    """Test that value_alias and variable_alias are properly stored in column mapping."""
+    base_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 3],
+            "value": [10, 20, 30],
+            "variable": ["a", "b", "c"],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 4],
+            "value": [10, 25, 40],
+            "variable": ["a", "x", "y"],
+        }
+    )
+
+    # Test with default aliases
+    result_default = compare(["ID"], base_df, compare_df)
+    meta_default = result_default._comparison_metadata
+
+    # Verify default aliases are in column mapping
+    assert meta_default.column_mapping.mapping["__pl_compare_value"] == "value"
+    assert meta_default.column_mapping.mapping["__pl_compare_variable"] == "variable"
+
+    # Test with custom aliases
+    result_custom = compare(
+        ["ID"], base_df, compare_df, value_alias="custom_value", variable_alias="custom_var"
+    )
+    meta_custom = result_custom._comparison_metadata
+
+    # Verify custom aliases are in column mapping
+    assert meta_custom.column_mapping.mapping["__pl_compare_value"] == "custom_value"
+    assert meta_custom.column_mapping.mapping["__pl_compare_variable"] == "custom_var"
+
+    # Verify that ComparisonMetadata no longer has value_alias and variable_alias attributes
+    assert not hasattr(meta_default, "value_alias")
+    assert not hasattr(meta_default, "variable_alias")
+    assert not hasattr(meta_custom, "value_alias")
+    assert not hasattr(meta_custom, "variable_alias")
+
+    # Test that the custom aliases appear in the output
+    row_diff = result_custom.rows_sample()
+    assert "custom_var" in row_diff.columns
+    assert "custom_value" in row_diff.columns
+
+    value_diff = result_custom.values_sample()
+    assert "custom_var" in value_diff.columns
+    assert "custom_value" not in value_diff.columns  # value is base/compare columns
+    assert "base" in value_diff.columns
+    assert "compare" in value_diff.columns
+
+
+def test_column_aliases_with_special_names():
+    """Test that column aliases work correctly with special column names."""
+    # Test with 'value' as a user column name
+    base_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 3],
+            "value": [10, 20, 30],  # User column named 'value'
+            "data": ["a", "b", "c"],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 4],
+            "value": [10, 25, 40],  # User column named 'value'
+            "data": ["a", "x", "y"],
+        }
+    )
+
+    # Use custom aliases to avoid conflict
+    result = compare(
+        ["ID"], base_df, compare_df, value_alias="result_value", variable_alias="result_var"
+    )
+
+    # Verify the output uses custom aliases
+    row_diff = result.rows_sample()
+    assert "result_var" in row_diff.columns
+    assert "result_value" in row_diff.columns
+    assert "join_columns.ID" in row_diff.columns
+
+    # Verify user's 'value' column is preserved with join_columns prefix
+    assert "value" not in row_diff.columns  # Should be prefixed
+
+    value_diff = result.values_sample()
+    assert "result_var" in value_diff.columns
+    assert "base" in value_diff.columns
+    assert "compare" in value_diff.columns
+
+
+def test_reserved_column_names_error():
+    """Test that using reserved internal column names raises an appropriate error."""
+    base_df = pl.DataFrame(
+        {"__pl_compare_value": [1, 2, 3], "ID": [1, 2, 3], "data": ["a", "b", "c"]}
+    )
+    compare_df = pl.DataFrame(
+        {"__pl_compare_status": ["x", "y", "z"], "ID": [1, 2, 3], "data": ["a", "b", "c"]}
+    )
+
+    # Test single reserved column
+    with pytest.raises(ValueError, match="Column name.*are reserved for internal use"):
+        compare(["ID"], base_df, compare_df)
+
+    # Test multiple reserved columns
+    base_df_multi = pl.DataFrame(
+        {"__pl_compare_value": [1, 2, 3], "__pl_compare_base": [10, 20, 30], "ID": [1, 2, 3]}
+    )
+
+    with pytest.raises(ValueError, match="Column name.*are reserved for internal use"):
+        compare(["ID"], base_df_multi, base_df_multi)
+
+    # Test that the error message mentions the pattern
+    with pytest.raises(ValueError, match="All columns starting with '__pl_compare_' are reserved"):
+        compare(["ID"], base_df, compare_df)
+
+
+def test_reserved_column_names_error_specific_columns():
+    """Test error for each specific reserved column name."""
+    reserved_columns = [
+        "__pl_compare_in_base",
+        "__pl_compare_in_compare",
+        "__pl_compare_value",
+        "__pl_compare_variable",
+        "__pl_compare_base",
+        "__pl_compare_compare",
+        "__pl_compare_status",
+    ]
+
+    for reserved_col in reserved_columns:
+        base_df = pl.DataFrame({reserved_col: [1, 2, 3], "ID": [1, 2, 3], "data": ["a", "b", "c"]})
+        compare_df = pl.DataFrame({"ID": [1, 2, 3], "data": ["a", "b", "c"]})
+
+        with pytest.raises(ValueError, match=f"Column name.*{reserved_col}.*are reserved"):
+            compare(["ID"], base_df, compare_df)
+
+
+def test_apply_column_renames_type_error():
+    """Test that @apply_column_renames raises TypeError for non-DataFrame/LazyFrame results."""
+    from pl_compare.compare import apply_column_renames, ComparisonMetadata, ColumnMapping
+
+    # Create a mock function that returns an invalid type
+    @apply_column_renames
+    def mock_function_returns_string(meta: ComparisonMetadata):
+        return "invalid_result"
+
+    @apply_column_renames
+    def mock_function_returns_int(meta: ComparisonMetadata):
+        return 42
+
+    @apply_column_renames
+    def mock_function_returns_list(meta: ComparisonMetadata):
+        return [1, 2, 3]
+
+    # Create a mock metadata object
+    mock_meta = ComparisonMetadata(
+        join_columns=["ID"],
+        base_df=pl.LazyFrame({"ID": [1, 2, 3]}),
+        compare_df=pl.LazyFrame({"ID": [1, 2, 3]}),
+        streaming=False,
+        resolution=None,
+        equality_check=None,
+        sample_limit=None,
+        base_alias="base",
+        compare_alias="compare",
+        schema_comparison=False,
+        hide_empty_stats=False,
+        validate="m:m",
+        column_mapping=ColumnMapping(mapping={"__pl_compare_value": "value"}),
+    )
+
+    # Test string result
+    with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
+        mock_function_returns_string(mock_meta)
+
+    # Test int result
+    with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
+        mock_function_returns_int(mock_meta)
+
+    # Test list result
+    with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
+        mock_function_returns_list(mock_meta)
