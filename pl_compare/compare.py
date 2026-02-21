@@ -90,8 +90,7 @@ def _generate_column_mapping(
     Returns:
         ColumnMapping object containing internal names and their mappings to output names
     """
-    # Simple mapping: all internal columns use __pl_compare_ prefix
-    # This ensures no conflicts with user columns since internal names are unique
+    # Simple mapping: all internal columns use __pl_compare_ prefix internally to prevent conflict with suer columns
     return ColumnMapping(
         mapping={
             # Critical internal columns used in join operations
@@ -102,7 +101,7 @@ def _generate_column_mapping(
             "__pl_compare_variable": variable_alias,
             "__pl_compare_base": base_alias,
             "__pl_compare_compare": compare_alias,
-            "__pl_compare_status": variable_alias,  # status is used internally but appears as variable in output
+            "__pl_compare_status": variable_alias,
         }
     )
 
@@ -658,8 +657,6 @@ class compare:
         all_user_columns = list(
             set(base_lazy_df.collect().columns) | set(compare_lazy_df.collect().columns)
         )
-
-        # Check for reserved internal column names in user data
 
         column_mapping = _generate_column_mapping(
             all_user_columns,
