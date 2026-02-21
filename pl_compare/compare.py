@@ -8,7 +8,10 @@ from polars.datatypes.classes import DataTypeClass
 # Create a TypeVar bound to either DataFrame or LazyFrame
 T = TypeVar("T", pl.DataFrame, pl.LazyFrame)
 
-def apply_column_renames(func: Callable[['ComparisonMetadata'], T]) -> Callable[['ComparisonMetadata'], T]:
+
+def apply_column_renames(
+    func: Callable[["ComparisonMetadata"], T]
+) -> Callable[["ComparisonMetadata"], T]:
     """
     Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
     This decorator automatically renames internal column names to their final output names
@@ -22,7 +25,7 @@ def apply_column_renames(func: Callable[['ComparisonMetadata'], T]) -> Callable[
     """
 
     @wraps(func)
-    def wrapper(meta: 'ComparisonMetadata') -> T:
+    def wrapper(meta: "ComparisonMetadata") -> T:
         result = func(meta)
         if not isinstance(result, (pl.LazyFrame, pl.DataFrame)):
             raise TypeError(
