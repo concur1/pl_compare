@@ -122,8 +122,6 @@ class ComparisonMetadata:
     sample_limit: Optional[int]
     base_alias: str
     compare_alias: str
-    value_alias: str
-    variable_alias: str
     schema_comparison: bool
     hide_empty_stats: bool
     validate: Literal["m:m", "m:1", "1:m", "1:1"]
@@ -520,8 +518,6 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             sample_limit=None,
             base_alias=f"{meta.base_alias}_format",
             compare_alias=f"{meta.compare_alias}_format",
-            value_alias=meta.value_alias,
-            variable_alias=meta.variable_alias,
             schema_comparison=True,
             hide_empty_stats=False,
             validate="1:1",
@@ -694,8 +690,6 @@ class compare:
             sample_limit,
             base_alias,
             compare_alias,
-            value_alias,
-            variable_alias,
             False,
             hide_empty_stats,
             validate,
