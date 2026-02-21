@@ -1,12 +1,14 @@
 from dataclasses import dataclass
-from typing import Literal, Callable, List, Union, Dict, Optional, Any
+from typing import Literal, Callable, List, Union, Dict, Optional, TypeVar
 from functools import wraps
 
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
 
+# Create a TypeVar bound to either DataFrame or LazyFrame
+T = TypeVar("T", pl.DataFrame, pl.LazyFrame)
 
-def apply_column_renames(func: Callable[[Any],pl.DaraFrame | pl.LazyFrame]) -> Callable[[pl.DaraFrame | pl.LazyFrame],pl.DaraFrame | pl.LazyFrame]:
+def apply_column_renames(func: Callable[['ComparisonMetadata'], T]) -> Callable[['ComparisonMetadata'], T]:
     """
     Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
     This decorator automatically renames internal column names to their final output names
@@ -20,9 +22,9 @@ def apply_column_renames(func: Callable[[Any],pl.DaraFrame | pl.LazyFrame]) -> C
     """
 
     @wraps(func)
-    def wrapper(meta: ComparisonMetadata, *args, **kwargs) -> pl.DaraFrame | pl.LazyFrame:
-        result = func(meta, *args, **kwargs)
-        if not isinstance(result, pl.LazyFrame) and not isinstance(result, pl.DataFrame):
+    def wrapper(meta: 'ComparisonMetadata') -> T:
+        result = func(meta)
+        if not isinstance(result, (pl.LazyFrame, pl.DataFrame)):
             raise TypeError(
                 f"Expected result to be a polars DataFrame or LazyFrame, "
                 f"but got {type(result).__name__}. "
@@ -33,8 +35,7 @@ def apply_column_renames(func: Callable[[Any],pl.DaraFrame | pl.LazyFrame]) -> C
         rename_mapping: dict[str, str] = {}
         if isinstance(result, pl.LazyFrame):
             result_columns = result.collect_schema().names()
-
-        if isinstance(result, pl.DataFrame):
+        else:
             result_columns = result.columns
 
         for internal_col, output_col in meta.column_mapping.mapping.items():
