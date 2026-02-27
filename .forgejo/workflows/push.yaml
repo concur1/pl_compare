@@ -9,7 +9,6 @@ jobs:
           - { polars-version: "1.20", python-version: "3.13" }
           - { polars-version: "1.30", python-version: "3.13" }
           - { polars-version: "1.37", python-version: "3.13" }
-          - { polars-version: "latest", python-version: "3.8" }
           - { polars-version: "latest",  python-version: "3.11" }
           - { polars-version: "latest",  python-version: "3.11" }
           - { polars-version: "latest", python-version: "3.13" }
