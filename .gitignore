@@ -2,3 +2,4 @@ __pycache__/
 data/
 output_data/
 dist/
+.direnv/
