@@ -15,3 +15,4 @@ result = lf.unpivot(
     value_name="value"
 ).collect()
 
+print(result)
