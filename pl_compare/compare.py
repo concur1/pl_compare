@@ -430,11 +430,11 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
                 has_diff=f"{col}_has_diff",
             )
             .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
-            .alias(col)
+            .alias(f"__pl_compare_temp__{col}")
             .struct.json_encode()
             for col, format in compare_columns.items()
         ]
-    )
+    ).rename({f"__pl_compare_temp__{col}": col for col in compare_columns})
 
     # Use internal column names from column mapping for unpivot to avoid conflicts
     internal_variable_col = meta.column_mapping.variable
