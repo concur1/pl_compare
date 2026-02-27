@@ -10,7 +10,7 @@ lf = pl.LazyFrame({
 result = lf.unpivot(
     index="id",
     on=["example_variable"], # We are melting a column into a new column with the same name
-    variable_name="variable",
+    variable_name="example_variable",
     value_name="value"
 ).collect()
 
