@@ -3,51 +3,35 @@ name: Reproduce Polars DuplicateError
 on:
   push:
     branches: [ main ]
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  test-polars:
-    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
-        python-version: ["3.10", "3.12"]
-
+  reproduce:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
 
       - name: Install Polars 1.38.1
-        run: |
-          python -m pip install --upgrade pip
-          pip install polars==1.38.1
+        run: pip install polars==1.38.1
 
-      - name: Run Reproduction Script
+      - name: Run Script
         shell: python
         run: |
           import polars as pl
-          
-          print(f"Polars version: {pl.__version__}")
+          print(f"Running on Polars {pl.__version__}")
           
           df = pl.DataFrame({"ID": [1], "value": [10]})
-
-          # This should raise polars.exceptions.DuplicateError in v1.38.1
+          
+          # This forces a simultaneous rename/re-alias conflict
+          # mimics the logic inside pl_compare/compare.py:474
           plan = (
               df.lazy()
-              .rename({"value": "value_base"})
-              .with_columns([
-                  pl.lit("new_data").alias("value")
+              .select([
+                  pl.col("value").alias("value_base"),
+                  pl.lit("new").alias("value")
               ])
               .collect()
           )
-          
-          print("Plan collected successfully:")
-          print(plan)
