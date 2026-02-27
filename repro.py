@@ -1,41 +1,26 @@
 import polars as pl
 import sys
 
-print(f"Python version: {sys.version}")
 print(f"Polars version: {pl.__version__}")
 
-# 1. Create a LazyFrame with two distinct columns
-lf = pl.LazyFrame({
-    "col_1": [1, 2, 3],
-    "col_2": [4, 5, 6]
-})
+# 1. Start with a simple LazyFrame
+lf = pl.LazyFrame({"a": [1], "b": [2]})
 
-# 2. Rename 'col_1' to 'col_2'. 
-# Now we have TWO columns named 'col_2' in the Lazy plan.
-# Polars 1.37 allows this plan to sit in memory.
-lf_duplicate = lf.rename({"col_1": "col_2"})
+# 2. Replicate the behavior in compare.py:
+# Mapping two internal columns to the same output name.
+target_alias = "duplicated_name"
 
-print("Lazy plan with duplicate names created.")
+# We select the same alias twice. 
+# Polars 1.37: Allows the Lazy plan to be built and collected.
+# Polars 1.38: Fails during 'Sink' resolution.
+lf_lazy = lf.select([
+    pl.col("a").alias(target_alias),
+    pl.col("b").alias(target_alias)
+])
 
-# 3. Perform a 'harmless' operation.
-# In your library, this might be a join or a select.
-# We will just filter.
-lf_final = lf_duplicate.filter(pl.lit(True))
+print("Attempting to .collect()...")
+# No try-except block. We want a natural crash to fail the CI/CD.
+result = lf_lazy.collect()
 
-print("Attempting to collect...")
-
-try:
-    # 1.37: Likely succeeds because it doesn't resolve the conflict unless forced.
-    # 1.38: Fails with DuplicateError: column with name 'col_2' has more than one occurrence.
-    result = lf_final.collect()
-    print("SUCCESS: Collected successfully (Polars 1.37 behavior)")
-    print(result)
-except pl.exceptions.DuplicateError as e:
-    print(f"FAILURE: Caught DuplicateError (Polars 1.38 behavior)")
-    print(e)
-    # We exit with 1 only if we are on 1.38+ to show the regression
-    if pl.__version__ >= "1.38":
-        sys.exit(1)
-except Exception as e:
-    print(f"Unexpected error: {e}")
-    sys.exit(1)
+print("Success! (This only prints if the version allows duplicates)")
+print(result)
