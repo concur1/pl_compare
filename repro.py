@@ -4,40 +4,38 @@ import sys
 print(f"Python version: {sys.version}")
 print(f"Polars version: {pl.__version__}")
 
-# 1. Start with a LazyFrame that has a column named 'clash_name'
+# 1. Create a LazyFrame with two distinct columns
 lf = pl.LazyFrame({
-    "id": [1],
-    "clash_name": [10]  # This is the existing column
+    "col_1": [1, 2, 3],
+    "col_2": [4, 5, 6]
 })
 
-# 2. Perform an unpivot where the variable_name is ALSO 'clash_name'
-# In 1.37.0, Polars often allows the Lazy plan to be built and only 
-# errors if a downstream operation becomes truly ambiguous.
-# In 1.38.1, the schema validation is stricter during the optimization.
-try:
-    # We unpivot 'id', meaning 'clash_name' stays in the index/schema
-    # while we also try to create a new column named 'clash_name' via variable_name.
-    poisoned_lf = lf.unpivot(
-        on=["id"], 
-        variable_name="clash_name", 
-        value_name="some_value"
-    )
-    
-    print("LazyFrame plan created. Resolving schema...")
-    
-    # This call triggers the DuplicateError in 1.38.1
-    schema = poisoned_lf.collect_schema()
-    print("Schema resolved successfully.")
-    
-    # This call would also trigger it
-    # res = poisoned_lf.collect()
-    
-except pl.exceptions.DuplicateError as e:
-    print(f"\nCaught expected error: {e}")
-    sys.exit(1) # Exit with error for GitHub Action
-except Exception as e:
-    print(f"\nCaught unexpected error: {type(e).__name__}: {e}")
-    sys.exit(1)
+# 2. Rename 'col_1' to 'col_2'. 
+# Now we have TWO columns named 'col_2' in the Lazy plan.
+# Polars 1.37 allows this plan to sit in memory.
+lf_duplicate = lf.rename({"col_1": "col_2"})
 
-print("\nSuccess: No DuplicateError thrown.")
-sys.exit(0)
+print("Lazy plan with duplicate names created.")
+
+# 3. Perform a 'harmless' operation.
+# In your library, this might be a join or a select.
+# We will just filter.
+lf_final = lf_duplicate.filter(pl.lit(True))
+
+print("Attempting to collect...")
+
+try:
+    # 1.37: Likely succeeds because it doesn't resolve the conflict unless forced.
+    # 1.38: Fails with DuplicateError: column with name 'col_2' has more than one occurrence.
+    result = lf_final.collect()
+    print("SUCCESS: Collected successfully (Polars 1.37 behavior)")
+    print(result)
+except pl.exceptions.DuplicateError as e:
+    print(f"FAILURE: Caught DuplicateError (Polars 1.38 behavior)")
+    print(e)
+    # We exit with 1 only if we are on 1.38+ to show the regression
+    if pl.__version__ >= "1.38":
+        sys.exit(1)
+except Exception as e:
+    print(f"Unexpected error: {e}")
+    sys.exit(1)
