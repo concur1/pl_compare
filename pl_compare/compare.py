@@ -101,7 +101,7 @@ def _generate_column_mapping(
             "__pl_compare_variable": variable_alias,
             "__pl_compare_base": base_alias,
             "__pl_compare_compare": compare_alias,
-            "__pl_compare_status": variable_alias,
+            "__pl_compare_status": "status",
         }
     )
 
