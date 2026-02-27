@@ -12,7 +12,7 @@ result = lf.unpivot(
     index="id",
     on=["variable"], # We are melting a column into a new column with the same name
     variable_name="exampe_variable",
-    value_name="value"
+    value_name="example_value"
 ).collect()
 
 print(result)
