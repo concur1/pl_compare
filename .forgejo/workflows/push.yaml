@@ -13,7 +13,6 @@ jobs:
           - { polars-version: "latest",  python-version: "3.11" }
           - { polars-version: "latest",  python-version: "3.11" }
           - { polars-version: "latest", python-version: "3.13" }
-        # polars-version: ["1.1", "1.2", "1.37", "latest"]
 
 
     steps:
@@ -22,7 +21,10 @@ jobs:
       - run: uv python pin '${{ matrix.configs.python-version }}'
 
       - name: Install dependencies
-        run: uv sync 
+        run: |
+          uv remove polars
+          uv add 'polars==${{ matrix.configs.polars-version }}'
+          uv sync 
 
       - name: Run checks
         run: |
