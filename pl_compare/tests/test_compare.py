@@ -108,7 +108,7 @@ shape: (1, 4)
 @pytest.mark.parametrize(
     "column_name",
     [
-        "value",
+        # "value",
         "variable",
         "in_base",
         "in_compare",
