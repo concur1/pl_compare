@@ -1,38 +1,29 @@
 import polars as pl
+import sys
 
-def reproduce_polars_issue():
-    # 1. Create a basic LazyFrame
-    # We use two columns that we will attempt to rename to the same alias
-    lf = pl.LazyFrame({
-        "col_a": [1, 2, 3],
-        "col_b": ["x", "y", "z"]
-    })
+# Display environment info for the log
+print(f"Python version: {sys.version}")
+print(f"Polars version: {pl.__version__}")
 
-    # 2. Define a rename mapping where two different keys point to the same value
-    # This simulates your internal mapping bug where:
-    # "__pl_compare_variable" -> variable_alias
-    # "__pl_compare_status"   -> variable_alias
-    target_alias = "duplicated_name"
-    mapping = {
-        "col_a": target_alias,
-        "col_b": target_alias
-    }
+# 1. Create a LazyFrame
+lf = pl.LazyFrame({
+    "column_a": [1, 2, 3],
+    "column_b": [4, 5, 6]
+})
 
-    print(f"Attempting to rename columns to the same alias: {target_alias}")
-    
-    # 3. Apply the rename
-    # In Lazy mode, Polars often accepts this and adds it to the query plan
-    lf = lf.rename(mapping)
+# 2. Rename both columns to the same name
+# Polars allows this during the planning stage (LazyFrame)
+lf = lf.rename({
+    "column_a": "duplicate_name",
+    "column_b": "duplicate_name"
+})
 
-    # 4. Trigger the error
-    # The DuplicateError typically surfaces here during materialization
-    try:
-        result = lf.collect()
-        print("Resulting Columns:", result.columns)
-    except Exception as e:
-        print("\n--- CAUGHT ERROR ---")
-        print(e)
-        print("--------------------")
+print("Attempting to .collect() the LazyFrame...")
 
-if __name__ == "__main__":
-    reproduce_polars_issue()
+# 3. Trigger the crash
+# This will raise a DuplicateError and exit the script
+result = lf.collect()
+
+# This line will never be reached if the bug/behavior is present
+print("Successfully collected:")
+print(result)
