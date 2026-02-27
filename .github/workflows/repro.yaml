@@ -27,4 +27,4 @@ jobs:
 
       - name: Run Reproduction Script
         # If this script crashes, the GHA step will turn red
-        run: python repro.py
+        run: POLARS_VERBOSE=1 python repro.py
