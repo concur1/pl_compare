@@ -1,5 +1,4 @@
 import polars as pl
-import sys
 
 print(f"Polars version: {pl.__version__}")
 
