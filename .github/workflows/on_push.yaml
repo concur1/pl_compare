@@ -15,7 +15,7 @@ jobs:
 
 
     steps:
-      - uses: actions/chrckout@v6
+      - uses: actions/checkout@v6
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python pin '${{ matrix.configs.python-version }}'
 
