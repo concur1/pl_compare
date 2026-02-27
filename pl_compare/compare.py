@@ -43,10 +43,7 @@ def apply_column_renames(
 
         for internal_col, output_col in meta.column_mapping.mapping.items():
             if internal_col in result_columns and internal_col != output_col:
-                rename_mapping[internal_col] = output_col
-
-        if rename_mapping:
-            result = result.rename(rename_mapping)
+                result = result.rename({internal_col:output_col})
 
         return result
 
@@ -64,7 +61,7 @@ class ColumnMapping:
     variable: str = "__pl_compare_variable"
     base: str = "__pl_compare_base"
     compare: str = "__pl_compare_compare"
-    status: str = "__pl_compare_status"
+    # status: str = "__pl_compare_status"
 
 
 def _generate_column_mapping(
@@ -101,7 +98,7 @@ def _generate_column_mapping(
             "__pl_compare_variable": variable_alias,
             "__pl_compare_base": base_alias,
             "__pl_compare_compare": compare_alias,
-            "__pl_compare_status": variable_alias,
+            # "__pl_compare_status": "status",
         }
     )
 
@@ -215,7 +212,7 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.status),
+            pl.lit("status").alias(meta.column_mapping.variable),
             pl.lit(f"in {meta.base_alias} only").alias(meta.column_mapping.value),
         ]
     )
@@ -228,7 +225,7 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.status),
+            pl.lit("status").alias(meta.column_mapping.variable),
             pl.lit(f"in {meta.compare_alias} only").alias(meta.column_mapping.value),
         ]
     )

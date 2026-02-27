@@ -3,24 +3,28 @@ import sys
 
 print(f"Polars version: {pl.__version__}")
 
-# 1. Start with a simple LazyFrame
-lf = pl.LazyFrame({"a": [1], "b": [2]})
+# 1. Start with a LazyFrame where one column has the name we want to use later
+lf = pl.LazyFrame({
+    "id": [1, 2],
+    "variable": ["existing_data", "existing_data"] 
+})
 
-# 2. Replicate the behavior in compare.py:
-# Mapping two internal columns to the same output name.
-target_alias = "duplicated_name"
-
-# We select the same alias twice. 
-# Polars 1.37: Allows the Lazy plan to be built and collected.
-# Polars 1.38: Fails during 'Sink' resolution.
-lf_lazy = lf.select([
-    pl.col("a").alias(target_alias),
-    pl.col("b").alias(target_alias)
-])
-
-print("Attempting to .collect()...")
-# No try-except block. We want a natural crash to fail the CI/CD.
-result = lf_lazy.collect()
-
-print("Success! (This only prints if the version allows duplicates)")
-print(result)
+# 2. Replicate the library's unpivot logic
+# We unpivot a column, but we set the variable_name to 'variable'
+# (which is the default, but also already exists in our schema above)
+try:
+    # 1.37: Succeeds. It just creates a second 'variable' column or shadows it.
+    # 1.38: Fails with DuplicateError: column with name 'variable' has more than one occurrence
+    result = lf.unpivot(
+        index="id",
+        on=["variable"], # We are melting a column into a new column with the same name
+        variable_name="variable",
+        value_name="value"
+    ).collect()
+    
+    print("SUCCESS: Collected successfully.")
+except pl.exceptions.DuplicateError as e:
+    print(f"FAILURE: Caught DuplicateError: {e}")
+    # Only exit 1 on 1.38 to prove it's a regression
+    if "1.38" in pl.__version__:
+        sys.exit(1)
