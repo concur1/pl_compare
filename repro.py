@@ -1,29 +1,38 @@
 import polars as pl
 import sys
 
-# Display environment info for the log
 print(f"Python version: {sys.version}")
 print(f"Polars version: {pl.__version__}")
 
-# 1. Create a LazyFrame
+# 1. Setup a standard LazyFrame
 lf = pl.LazyFrame({
-    "column_a": [1, 2, 3],
-    "column_b": [4, 5, 6]
+    "id": [1, 2],
+    "column_to_melt": [10, 20]
 })
 
-# 2. Rename both columns to the same name
-# Polars allows this during the planning stage (LazyFrame)
-lf = lf.rename({
-    "column_a": "duplicate_name",
-    "column_b": "duplicate_name"
-})
+# 2. This simulates the logic in your library's 'get_column_value_differences'
+# In your code, 'variable_alias' and 'value_alias' were accidentally 
+# pointing to the same string.
+conflicting_name = "clash_name"
 
-print("Attempting to .collect() the LazyFrame...")
+print(f"Attempting unpivot with conflicting variable/value names: '{conflicting_name}'")
 
-# 3. Trigger the crash
-# This will raise a DuplicateError and exit the script
-result = lf.collect()
+# In Polars, unpivot/melt creates two new columns. 
+# If you name them the same thing, it creates a corrupt Lazy plan.
+lf_melted = lf.unpivot(
+    index="id",
+    on=["column_to_melt"],
+    variable_name=conflicting_name,
+    value_name=conflicting_name
+)
 
-# This line will never be reached if the bug/behavior is present
-print("Successfully collected:")
-print(result)
+# 3. Trigger the collection
+# This should produce the DuplicateError during the optimization/collect phase
+try:
+    result = lf_melted.collect()
+    print("Columns in result:", result.columns)
+except Exception as e:
+    print("\n--- CAUGHT ERROR ---")
+    print(e)
+    # Re-raise to ensure the GitHub Action fails
+    raise
