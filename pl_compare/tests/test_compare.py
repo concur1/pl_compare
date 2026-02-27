@@ -676,95 +676,95 @@ def test_usage_of_status_column():
     compare(["status"], base_df, compare_df)
 
 
-# def test_column_aliases_in_metadata():
-#     """Test that value_alias and variable_alias are properly stored in column mapping."""
-#     base_df = pl.DataFrame(
-#         {
-#             "ID": [1, 2, 3],
-#             "value": [10, 20, 30],
-#             "variable": ["a", "b", "c"],
-#         }
-#     )
-#     compare_df = pl.DataFrame(
-#         {
-#             "ID": [1, 2, 4],
-#             "value": [10, 25, 40],
-#             "variable": ["a", "x", "y"],
-#         }
-#     )
+def test_column_aliases_in_metadata():
+    """Test that value_alias and variable_alias are properly stored in column mapping."""
+    base_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 3],
+            "value": [10, 20, 30],
+            "variable": ["a", "b", "c"],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 4],
+            "value": [10, 25, 40],
+            "variable": ["a", "x", "y"],
+        }
+    )
 
-#     # Test with default aliases
-#     result_default = compare(["ID"], base_df, compare_df)
-#     meta_default = result_default._comparison_metadata
+    # Test with default aliases
+    result_default = compare(["ID"], base_df, compare_df)
+    meta_default = result_default._comparison_metadata
 
-#     # Verify default aliases are in column mapping
-#     assert meta_default.column_mapping.mapping["__pl_compare_value"] == "value"
-#     assert meta_default.column_mapping.mapping["__pl_compare_variable"] == "variable"
+    # Verify default aliases are in column mapping
+    assert meta_default.column_mapping.mapping["__pl_compare_value"] == "value"
+    assert meta_default.column_mapping.mapping["__pl_compare_variable"] == "variable"
 
-#     # Test with custom aliases
-#     result_custom = compare(
-#         ["ID"], base_df, compare_df, value_alias="custom_value", variable_alias="custom_var"
-#     )
-#     meta_custom = result_custom._comparison_metadata
+    # Test with custom aliases
+    result_custom = compare(
+        ["ID"], base_df, compare_df, value_alias="custom_value", variable_alias="custom_var"
+    )
+    meta_custom = result_custom._comparison_metadata
 
-#     # Verify custom aliases are in column mapping
-#     assert meta_custom.column_mapping.mapping["__pl_compare_value"] == "custom_value"
-#     assert meta_custom.column_mapping.mapping["__pl_compare_variable"] == "custom_var"
+    # Verify custom aliases are in column mapping
+    assert meta_custom.column_mapping.mapping["__pl_compare_value"] == "custom_value"
+    assert meta_custom.column_mapping.mapping["__pl_compare_variable"] == "custom_var"
 
-#     # Verify that ComparisonMetadata no longer has value_alias and variable_alias attributes
-#     assert not hasattr(meta_default, "value_alias")
-#     assert not hasattr(meta_default, "variable_alias")
-#     assert not hasattr(meta_custom, "value_alias")
-#     assert not hasattr(meta_custom, "variable_alias")
+    # Verify that ComparisonMetadata no longer has value_alias and variable_alias attributes
+    assert not hasattr(meta_default, "value_alias")
+    assert not hasattr(meta_default, "variable_alias")
+    assert not hasattr(meta_custom, "value_alias")
+    assert not hasattr(meta_custom, "variable_alias")
 
-#     # Test that the custom aliases appear in the output
-#     row_diff = result_custom.rows_sample()
-#     assert "custom_var" in row_diff.columns
-#     assert "custom_value" in row_diff.columns
+    # Test that the custom aliases appear in the output
+    row_diff = result_custom.rows_sample()
+    assert "custom_var" in row_diff.columns
+    assert "custom_value" in row_diff.columns
 
-#     value_diff = result_custom.values_sample()
-#     assert "custom_var" in value_diff.columns
-#     assert "custom_value" not in value_diff.columns  # value is base/compare columns
-#     assert "base" in value_diff.columns
-#     assert "compare" in value_diff.columns
+    value_diff = result_custom.values_sample()
+    assert "custom_var" in value_diff.columns
+    assert "custom_value" not in value_diff.columns  # value is base/compare columns
+    assert "base" in value_diff.columns
+    assert "compare" in value_diff.columns
 
 
-# def test_column_aliases_with_special_names():
-#     """Test that column aliases work correctly with special column names."""
-#     # Test with 'value' as a user column name
-#     base_df = pl.DataFrame(
-#         {
-#             "ID": [1, 2, 3],
-#             "value": [10, 20, 30],  # User column named 'value'
-#             "data": ["a", "b", "c"],
-#         }
-#     )
-#     compare_df = pl.DataFrame(
-#         {
-#             "ID": [1, 2, 4],
-#             "value": [10, 25, 40],  # User column named 'value'
-#             "data": ["a", "x", "y"],
-#         }
-#     )
+def test_column_aliases_with_special_names():
+    """Test that column aliases work correctly with special column names."""
+    # Test with 'value' as a user column name
+    base_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 3],
+            "value": [10, 20, 30],  # User column named 'value'
+            "data": ["a", "b", "c"],
+        }
+    )
+    compare_df = pl.DataFrame(
+        {
+            "ID": [1, 2, 4],
+            "value": [10, 25, 40],  # User column named 'value'
+            "data": ["a", "x", "y"],
+        }
+    )
 
-#     # Use custom aliases to avoid conflict
-#     result = compare(
-#         ["ID"], base_df, compare_df, value_alias="result_value", variable_alias="result_var"
-#     )
+    # Use custom aliases to avoid conflict
+    result = compare(
+        ["ID"], base_df, compare_df, value_alias="result_value", variable_alias="result_var"
+    )
 
-#     # Verify the output uses custom aliases
-#     row_diff = result.rows_sample()
-#     assert "result_var" in row_diff.columns
-#     assert "result_value" in row_diff.columns
-#     assert "join_columns.ID" in row_diff.columns
+    # Verify the output uses custom aliases
+    row_diff = result.rows_sample()
+    assert "result_var" in row_diff.columns
+    assert "result_value" in row_diff.columns
+    assert "join_columns.ID" in row_diff.columns
 
-#     # Verify user's 'value' column is preserved with join_columns prefix
-#     assert "value" not in row_diff.columns  # Should be prefixed
+    # Verify user's 'value' column is preserved with join_columns prefix
+    assert "value" not in row_diff.columns  # Should be prefixed
 
-#     value_diff = result.values_sample()
-#     assert "result_var" in value_diff.columns
-#     assert "base" in value_diff.columns
-#     assert "compare" in value_diff.columns
+    value_diff = result.values_sample()
+    assert "result_var" in value_diff.columns
+    assert "base" in value_diff.columns
+    assert "compare" in value_diff.columns
 
 
 def test_reserved_column_names_error():
