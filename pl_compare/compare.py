@@ -35,7 +35,6 @@ def apply_column_renames(
                 f"that return polars DataFrames or LazyFrames."
             )
 
-        rename_mapping: dict[str, str] = {}
         if isinstance(result, pl.LazyFrame):
             result_columns = result.collect_schema().names()
         else:
