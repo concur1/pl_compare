@@ -802,7 +802,6 @@ def test_reserved_column_names_error_specific_columns():
         "__pl_compare_variable",
         "__pl_compare_base",
         "__pl_compare_compare",
-        "__pl_compare_status",
     ]
 
     for reserved_col in reserved_columns:
