@@ -42,7 +42,7 @@ def apply_column_renames(
 
         for internal_col, output_col in meta.column_mapping.mapping.items():
             if internal_col in result_columns and internal_col != output_col:
-                result = result.rename({internal_col:output_col})
+                result = result.rename({internal_col: output_col})
 
         return result
 
