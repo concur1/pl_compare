@@ -35,7 +35,6 @@ def apply_column_renames(
                 f"that return polars DataFrames or LazyFrames."
             )
 
-        rename_mapping: dict[str, str] = {}
         if isinstance(result, pl.LazyFrame):
             result_columns = result.collect_schema().names()
         else:
@@ -43,10 +42,7 @@ def apply_column_renames(
 
         for internal_col, output_col in meta.column_mapping.mapping.items():
             if internal_col in result_columns and internal_col != output_col:
-                rename_mapping[internal_col] = output_col
-
-        if rename_mapping:
-            result = result.rename(rename_mapping)
+                result = result.rename({internal_col: output_col})
 
         return result
 
@@ -64,7 +60,7 @@ class ColumnMapping:
     variable: str = "__pl_compare_variable"
     base: str = "__pl_compare_base"
     compare: str = "__pl_compare_compare"
-    status: str = "__pl_compare_status"
+    # status: str = "__pl_compare_status"
 
 
 def _generate_column_mapping(
@@ -101,7 +97,6 @@ def _generate_column_mapping(
             "__pl_compare_variable": variable_alias,
             "__pl_compare_base": base_alias,
             "__pl_compare_compare": compare_alias,
-            "__pl_compare_status": variable_alias,
         }
     )
 
@@ -215,7 +210,7 @@ def get_base_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.status),
+            pl.lit("status").alias(meta.column_mapping.variable),
             pl.lit(f"in {meta.base_alias} only").alias(meta.column_mapping.value),
         ]
     )
@@ -228,7 +223,7 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
     return combined_table.select(
         meta.join_columns
         + [
-            pl.lit("status").alias(meta.column_mapping.status),
+            pl.lit("status").alias(meta.column_mapping.variable),
             pl.lit(f"in {meta.compare_alias} only").alias(meta.column_mapping.value),
         ]
     )
@@ -430,11 +425,11 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
                 has_diff=f"{col}_has_diff",
             )
             .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
-            .alias(col)
+            .alias(f"__pl_compare_temp__{col}")
             .struct.json_encode()
             for col, format in compare_columns.items()
         ]
-    )
+    ).rename({f"__pl_compare_temp__{col}": col for col in compare_columns})
 
     # Use internal column names from column mapping for unpivot to avoid conflicts
     internal_variable_col = meta.column_mapping.variable
