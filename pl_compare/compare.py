@@ -13,7 +13,9 @@ def apply_column_renames(
     func: Callable[["ComparisonMetadata"], T],
 ) -> Callable[["ComparisonMetadata"], T]:
     """
-    Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.    This decorator automatically renames internal column names to their final output names    based on the column mapping in the ComparisonMetadata.
+    Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
+    This decorator automatically renames internal column names to their final output names
+    based on the column mapping in the ComparisonMetadata.
 
     Args:
         func: The function that returns a DataFrame or LazyFrame to be renamed
