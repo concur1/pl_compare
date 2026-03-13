@@ -10,7 +10,7 @@ T = TypeVar("T", pl.DataFrame, pl.LazyFrame)
 
 
 def apply_column_renames(
-    func: Callable[["ComparisonMetadata"], T]
+    func: Callable[["ComparisonMetadata"], T],
 ) -> Callable[["ComparisonMetadata"], T]:
     """
     Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
@@ -515,9 +515,7 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
             validate="1:1",
             column_mapping=format_column_mapping,
         )
-    ).drop(
-        "variable"
-    )  # Drop the variable column to match expected schema comparison format
+    ).drop("variable")  # Drop the variable column to match expected schema comparison format
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:

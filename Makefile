@@ -6,16 +6,14 @@ help: ## Print help for make commands
 
 
 .PHONY: format
-format: ## Formats the files with ruff and black
-	-ruff check --fix $(SRCPATH)
-	-black $(SRCPATH)
-	-ruff check $(SRCPATH)
-	-black --check $(SRCPATH)
+format: ## Formats and checks the files with ruff
+	ruff check --fix $(SRCPATH)
+	ruff format $(SRCPATH)
+	ruff check $(SRCPATH)
 
 .PHONY: check
 check: ## Runs checks using ruff, black, mypy and pytest
 	ruff check $(SRCPATH)
-	black --check $(SRCPATH)
 	mypy --strict pl_compare/compare.py
 	pytest --doctest-glob="README.md" -v
 

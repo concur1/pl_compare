@@ -55,9 +55,7 @@ shape: (2, 3)
 ╞══════════╪═════════════╪══════════════╡
 │ Example2 ┆ String      ┆ Int64        │
 │ Example3 ┆ null        ┆ Int64        │
-└──────────┴─────────────┴──────────────┘""" in str(
-        compare_result.report()
-    )
+└──────────┴─────────────┴──────────────┘""" in str(compare_result.report())
 
     assert """ROW DIFFERENCES:
 shape: (5, 2)
@@ -80,9 +78,7 @@ shape: (2, 3)
 ╞═════════════════╪══════════╪═══════════════╡
 │ 12345678        ┆ status   ┆ in test only  │
 │ 1234567810      ┆ status   ┆ in other only │
-└─────────────────┴──────────┴───────────────┘""" in str(
-        compare_result.report()
-    )
+└─────────────────┴──────────┴───────────────┘""" in str(compare_result.report())
     assert """VALUE DIFFERENCES:
 shape: (2, 3)
 ┌─────────────────────────┬───────┬────────────┐
@@ -100,9 +96,7 @@ shape: (1, 4)
 │ str             ┆ str      ┆ str  ┆ str   │
 ╞═════════════════╪══════════╪══════╪═══════╡
 │ 1234567         ┆ Example1 ┆ 6    ┆ 2     │
-└─────────────────┴──────────┴──────┴───────┘""" in str(
-        compare_result.report()
-    )
+└─────────────────┴──────────┴──────┴───────┘""" in str(compare_result.report())
 
 
 @pytest.mark.parametrize(
@@ -197,9 +191,7 @@ def test_expected_values_returned_for_bools_for_equal_dfs_none_id_columns(base_d
 │ Columns in compare ┆ 4     │
 │ Rows in base       ┆ 3     │
 │ Rows in compare    ┆ 3     │
-└────────────────────┴───────┘""" in str(
-        compare_result.report()
-    )
+└────────────────────┴───────┘""" in str(compare_result.report())
 
 
 def test_expected_values_returned_for_bools_for_unequal_dfs(base_df, compare_df):
@@ -586,9 +578,7 @@ shape: (3, 6)
 │                 ┆                 ┆                 ┆                ┆          ┆ only           │
 │ 12345678        ┆ 12345678        ┆ 12345678        ┆ 12345678       ┆ status   ┆ in base only   │
 └─────────────────┴─────────────────┴─────────────────┴────────────────┴──────────┴────────────────┘
-""" in str(
-        comp.report()
-    )
+""" in str(comp.report())
 
 
 def test_comparing_list_raises_exception():
