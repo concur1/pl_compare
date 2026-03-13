@@ -6,7 +6,7 @@ help: ## Print help for make commands
 
 
 .PHONY: format
-format: ## Formats the files with ruff
+format: ## Formats and checks the files with ruff
 	ruff check --fix $(SRCPATH)
 	ruff format $(SRCPATH)
 	ruff check $(SRCPATH)
