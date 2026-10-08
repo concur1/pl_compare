@@ -95,8 +95,10 @@ def check_equal(lazy, eager) -> None:
 
 
 def main() -> None:
-    cases = [(100_000, 3), (300_000, 5)]
-    reps = 3
+    # CI runs land on tiny runners with tight job timeouts, so keep the data
+    # proportionate: 25k/50k rows is plenty to measure the lazy-vs-eager ratio.
+    cases = [(25_000, 3), (50_000, 5)]
+    reps = 2
     print(f"polars {pl.__version__}, {reps} reps")
     header = f"{'rows':>8} {'cols':>4} {'lazy (ms)':>12} {'eager (ms)':>12} {'ratio':>7}"
     print(header)
