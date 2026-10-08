@@ -6,7 +6,7 @@ ships, and the reference is loaded from git (main:pl_compare/compare.py) so it
 can never drift from a hand-written copy. CI timing is noisy, so we report a
 ratio rather than absolute numbers.
 
-Exits 0 unless the current branch is >= 3x slower than main.
+Exits 0 unless the current branch is >= 1.5x slower than main.
 """
 
 import random
@@ -119,10 +119,10 @@ def main() -> None:
         cur_ms, main_ms = cur_s * 1000, main_s * 1000
         ratio = cur_ms / main_ms
         print(f"{rows:>8} {cols:>4} {cur_ms:>12.1f} {main_ms:>12.1f} {ratio:>6.2f}x")
-        assert cur_ms < 3 * main_ms, (
-            f"current {cur_ms:.0f}ms is >= 3x the main impl {main_ms:.0f}ms"
+        assert cur_ms < 1.5 * main_ms, (
+            f"current {cur_ms:.0f}ms is >= 1.5x the main impl {main_ms:.0f}ms"
         )
-    print("OK: current branch is within 3x of main")
+    print("OK: current branch is within 1.5x of main")
 
 
 if __name__ == "__main__":
