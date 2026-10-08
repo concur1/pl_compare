@@ -231,8 +231,8 @@ def get_compare_only_rows(meta: ComparisonMetadata) -> pl.LazyFrame:
 
 @apply_column_renames
 def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
-    base_only_rows = get_base_only_rows(meta).with_row_index()
-    compare_only_rows = get_compare_only_rows(meta).with_row_index()
+    base_only_rows = get_base_only_rows(meta).with_row_index("__pl_compare_index")
+    compare_only_rows = get_compare_only_rows(meta).with_row_index("__pl_compare_index")
     if meta.sample_limit is not None:
         base_only_rows = base_only_rows.limit(meta.sample_limit)
         compare_only_rows = compare_only_rows.limit(meta.sample_limit)
@@ -240,12 +240,15 @@ def get_row_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
     return (
         pl.concat(
             [
-                base_only_rows,
-                compare_only_rows,
+                # A side tag makes the (index, side) sort key unique, so the order
+                # is deterministic even though polars >= 2.0 no longer guarantees
+                # stable sorts for equal keys.
+                base_only_rows.with_columns(pl.lit(0).alias("__pl_compare_side")),
+                compare_only_rows.with_columns(pl.lit(1).alias("__pl_compare_side")),
             ]
         )
-        .sort("index")
-        .drop("index")
+        .sort(["__pl_compare_index", "__pl_compare_side"])
+        .drop(["__pl_compare_index", "__pl_compare_side"])
     )
 
 
