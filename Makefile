@@ -20,3 +20,7 @@ check: ## Runs checks using ruff, black, mypy and pytest
 .PHONY: test
 test: ## Runs tests
 	pytest --doctest-glob="README.md" -v
+
+.PHONY: bench
+bench: ## Runs the value differences benchmark
+	python benchmarks/bench_value_differences.py
