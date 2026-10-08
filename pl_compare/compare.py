@@ -1,17 +1,14 @@
 from dataclasses import dataclass
-from typing import Literal, Callable, List, Union, Dict, Optional, TypeVar
+from typing import Literal, Callable, List, Union, Dict, Optional
 from functools import wraps
 
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
 
-# Create a TypeVar bound to either DataFrame or LazyFrame
-T = TypeVar("T", pl.DataFrame, pl.LazyFrame)
-
 
 def apply_column_renames(
-    func: Callable[["ComparisonMetadata"], T],
-) -> Callable[["ComparisonMetadata"], T]:
+    func: Callable[["ComparisonMetadata"], Union[pl.DataFrame, pl.LazyFrame]],
+) -> Callable[["ComparisonMetadata"], Union[pl.DataFrame, pl.LazyFrame]]:
     """
     Decorator to apply column renames from column mapping to the result DataFrame/LazyFrame.
     This decorator automatically renames internal column names to their final output names
@@ -25,8 +22,8 @@ def apply_column_renames(
     """
 
     @wraps(func)
-    def wrapper(meta: "ComparisonMetadata") -> T:
-        result = func(meta)
+    def wrapper(meta: "ComparisonMetadata") -> Union[pl.DataFrame, pl.LazyFrame]:
+        result: Union[pl.DataFrame, pl.LazyFrame] = func(meta)
         if not isinstance(result, (pl.LazyFrame, pl.DataFrame)):
             raise TypeError(
                 f"Expected result to be a polars DataFrame or LazyFrame, "
@@ -330,7 +327,9 @@ def get_combined_tables(
 
 
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
-    value_differences = get_column_value_differences(meta)
+    # The value-differences input may be lazy; collect it here because this
+    # summary is a handful of scalar stats, so laziness buys nothing.
+    value_differences = convert_to_dataframe(get_column_value_differences(meta))
     variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
     final_df = (
         value_differences.group_by([variable_alias])
@@ -404,7 +403,7 @@ def get_columns_to_compare(
 
 
 @apply_column_renames
-def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
+def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame, pl.DataFrame]:
     how_join: Literal["inner", "full"] = "inner"
     coalesce: bool = False
     if meta.schema_comparison:
@@ -445,7 +444,11 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
         value_name=internal_value_col,
     )
 
-    if convert_to_dataframe(melted_df).height > 0 and len(compare_columns) > 0:
+    # A count (not the full melt) decides the branch: the two branches produce
+    # different output schemas for the empty case, so this can't be fully lazy.
+    # ponytail: eager len() keeps a data-dependent schema branch; remove once the
+    # empty-differences output shape is made unconditional.
+    if melted_df.select(pl.len()).collect().item() > 0 and len(compare_columns) > 0:
         # Use internal column names for processing
         melted_df = (
             melted_df.with_columns(
@@ -463,12 +466,12 @@ def get_column_value_differences(meta: ComparisonMetadata) -> pl.DataFrame:
     else:
         melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
 
-    result = melted_df.collect()
-
-    return result
+    return melted_df
 
 
-def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFrame:
+def get_column_value_differences_filtered(
+    meta: ComparisonMetadata,
+) -> Union[pl.LazyFrame, pl.DataFrame]:
     df = get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
@@ -502,23 +505,26 @@ def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
         base_alias=f"{meta.base_alias}_format",
         compare_alias=f"{meta.compare_alias}_format",
     )
-    return get_column_value_differences_filtered(
-        ComparisonMetadata(
-            join_columns=["column"],
-            base_df=base_df_schema,
-            compare_df=compare_df_schema,
-            streaming=True,
-            resolution=None,
-            equality_check=None,
-            sample_limit=None,
-            base_alias=f"{meta.base_alias}_format",
-            compare_alias=f"{meta.compare_alias}_format",
-            schema_comparison=True,
-            hide_empty_stats=False,
-            validate="1:1",
-            column_mapping=format_column_mapping,
-        )
-    ).drop("variable")  # Drop the variable column to match expected schema comparison format
+    # Schema tables are tiny; materialise (the input may be lazy) so callers get a DataFrame.
+    return convert_to_dataframe(
+        get_column_value_differences_filtered(
+            ComparisonMetadata(
+                join_columns=["column"],
+                base_df=base_df_schema,
+                compare_df=compare_df_schema,
+                streaming=True,
+                resolution=None,
+                equality_check=None,
+                sample_limit=None,
+                base_alias=f"{meta.base_alias}_format",
+                compare_alias=f"{meta.compare_alias}_format",
+                schema_comparison=True,
+                hide_empty_stats=False,
+                validate="1:1",
+                column_mapping=format_column_mapping,
+            )
+        ).drop("variable")  # Drop the variable column to match expected schema comparison format
+    )
 
 
 def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
