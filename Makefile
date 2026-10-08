@@ -23,4 +23,5 @@ test: ## Runs tests
 
 .PHONY: bench
 bench: ## Runs the value differences benchmark
-	uv run benchmarks/bench_value_differences.py
+	git fetch origin main --depth=1 || true
+	python benchmarks/bench_value_differences.py
