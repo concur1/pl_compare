@@ -1,13 +1,11 @@
 """Benchmark for summarise_value_difference (a.k.a. values_summary).
 
-Timing in CI is noisy, so instead of absolute numbers we report a ratio against
-an eager reference implementation of the same result. That keeps the measurement
-meaningful across machines, and guards against the catastrophic case where the
-production path ever loses badly to the reference. (The production path becomes
-lazy once the perf-value-differences-lazy branch lands; until then it is the
-current implementation, and the benchmark still catches regressions.)
+Compares the implementation on the current branch against the implementation
+on main: summarise_value_difference is whatever the branch being CI'd ships,
+and the reference is an inline copy of the same function as it is on main.
+CI timing is noisy, so we report a ratio rather than absolute numbers.
 
-Exits 0 unless the production path is >= 3x slower than the eager reference.
+Exits 0 unless the current branch is >= 3x slower than main.
 """
 
 import random
@@ -42,8 +40,8 @@ def make_data(rows: int, cols: int, mutate_frac: float, seed: int = 42):
     return pl.DataFrame(base, schema=schema), pl.DataFrame(cmp, schema=schema)
 
 
-def summarise_value_difference_eager(meta):
-    """Reference: the old implementation that materialised the melted frame first."""
+def summarise_value_difference_main(meta):
+    """Reference: an inline copy of summarise_value_difference as it is on main."""
     value_differences = convert_to_dataframe(get_column_value_differences(meta))
     variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
     final_df = (
@@ -86,9 +84,9 @@ def timeit(fn, meta, reps: int) -> float:
     return (time.perf_counter() - t0) / reps
 
 
-def check_equal(cur, eager) -> None:
-    assert cur.schema == eager.schema
-    for ra, rb in zip(cur.to_dicts(), eager.to_dicts()):
+def check_equal(cur, main) -> None:
+    assert cur.schema == main.schema
+    for ra, rb in zip(cur.to_dicts(), main.to_dicts()):
         for k in ra:
             assert ra[k] == rb[k] or (isinstance(ra[k], float) and abs(ra[k] - rb[k]) < 1e-6), (
                 ra[k],
@@ -103,21 +101,21 @@ def main() -> None:
     cases = [(50_000, 3), (100_000, 5)]
     reps = 2
     print(f"polars {pl.__version__}, {reps} reps")
-    header = f"{'rows':>8} {'cols':>4} {'current (ms)':>12} {'eager (ms)':>12} {'ratio':>7}"
+    header = f"{'rows':>8} {'cols':>4} {'current (ms)':>12} {'main (ms)':>12} {'ratio':>7}"
     print(header)
     print("-" * len(header))
     for rows, cols in cases:
         base_df, compare_df = make_data(rows, cols, mutate_frac=0.2)
         meta = compare(["id"], base_df, compare_df)._comparison_metadata
-        check_equal(summarise_value_difference(meta), summarise_value_difference_eager(meta))
+        check_equal(summarise_value_difference(meta), summarise_value_difference_main(meta))
         cur_ms = timeit(summarise_value_difference, meta, reps) * 1000
-        eager_ms = timeit(summarise_value_difference_eager, meta, reps) * 1000
-        ratio = cur_ms / eager_ms
-        print(f"{rows:>8} {cols:>4} {cur_ms:>12.1f} {eager_ms:>12.1f} {ratio:>6.2f}x")
-        assert cur_ms < 3 * eager_ms, (
-            f"current {cur_ms:.0f}ms is >= 3x the eager reference {eager_ms:.0f}ms"
+        main_ms = timeit(summarise_value_difference_main, meta, reps) * 1000
+        ratio = cur_ms / main_ms
+        print(f"{rows:>8} {cols:>4} {cur_ms:>12.1f} {main_ms:>12.1f} {ratio:>6.2f}x")
+        assert cur_ms < 3 * main_ms, (
+            f"current {cur_ms:.0f}ms is >= 3x the main impl {main_ms:.0f}ms"
         )
-    print("OK: production path is within 3x of the eager reference")
+    print("OK: current branch is within 3x of main")
 
 
 if __name__ == "__main__":
