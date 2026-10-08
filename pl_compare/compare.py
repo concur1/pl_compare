@@ -550,7 +550,7 @@ def summarise_column_differences(meta: ComparisonMetadata) -> pl.LazyFrame:
                 len(meta.base_df.collect().schema.keys()),
                 len(meta.compare_df.collect().schema.keys()),
                 len(
-                    [col for col in meta.compare_df.collect().schema.keys() if col in meta.base_df]
+                    [col for col in meta.compare_df.collect().schema.keys() if col in meta.base_df.collect_schema().names()]
                 ),
                 len(
                     [
