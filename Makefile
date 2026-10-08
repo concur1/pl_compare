@@ -23,4 +23,4 @@ test: ## Runs tests
 
 .PHONY: bench
 bench: ## Runs the value differences benchmark
-	python benchmarks/bench_value_differences.py
+	uv run benchmarks/bench_value_differences.py
