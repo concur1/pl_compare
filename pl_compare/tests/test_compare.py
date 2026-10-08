@@ -847,3 +847,32 @@ def test_apply_column_renames_type_error():
     # Test list result
     with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
         mock_function_returns_list(mock_meta)
+
+
+def test_row_differences_ordering_is_deterministic():
+    """rows_sample() must return rows in a fixed, interleaved (base, compare) order.
+
+    Polars >= 2.0 no longer guarantees a stable sort, so sorting on the duplicated
+    per-side row index (both sides renumbered from zero) produces a non-deterministic
+    order. A fresh compare is built per iteration so every collect can expose it.
+    """
+    base_df = pl.DataFrame({"ID": ["shared1", "shared2", "b0", "b1", "b2"]})
+    compare_df = pl.DataFrame({"ID": ["shared1", "shared2", "c0", "c1", "c2"]})
+
+    expected = pl.DataFrame(
+        {
+            "join_columns.ID": ["b0", "c0", "b1", "c1", "b2", "c2"],
+            "variable": ["status"] * 6,
+            "value": [
+                "in base only",
+                "in compare only",
+                "in base only",
+                "in compare only",
+                "in base only",
+                "in compare only",
+            ],
+        }
+    )
+    for _ in range(10):
+        compare_result = compare(["ID"], base_df, compare_df)
+        assert_frame_equal(compare_result.rows_sample(), expected)
