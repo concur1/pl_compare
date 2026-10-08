@@ -15,7 +15,9 @@ jobs:
           - { polars-version: "2.0",  python-version: "3.13" }
 
     steps:
-      - uses:  https://code.forgejo.org/actions/checkout@v3
+      - uses: https://code.forgejo.org/actions/checkout@v3
+        with:
+          fetch-depth: 0
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python pin '${{ matrix.configs.python-version }}'
 
