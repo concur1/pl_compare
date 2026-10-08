@@ -1,16 +1,19 @@
 """Benchmark for summarise_value_difference (a.k.a. values_summary).
 
-Compares the implementation on the current branch against the implementation
-on main: summarise_value_difference is whatever the branch being CI'd ships,
-and the reference is an inline copy of the same function as it is on main.
-CI timing is noisy, so we report a ratio rather than absolute numbers.
+Compares the implementation on the current branch against the actual product
+code on main: summarise_value_difference is whatever the branch being CI'd
+ships, and the reference is loaded from git (main:pl_compare/compare.py) so it
+can never drift from a hand-written copy. CI timing is noisy, so we report a
+ratio rather than absolute numbers.
 
 Exits 0 unless the current branch is >= 3x slower than main.
 """
 
 import random
+import subprocess
 import sys
 import time
+import types
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -19,8 +22,6 @@ import polars as pl
 
 from pl_compare.compare import (
     compare,
-    convert_to_dataframe,
-    get_column_value_differences,
     summarise_value_difference,
 )
 
@@ -40,40 +41,21 @@ def make_data(rows: int, cols: int, mutate_frac: float, seed: int = 42):
     return pl.DataFrame(base, schema=schema), pl.DataFrame(cmp, schema=schema)
 
 
-def summarise_value_difference_main(meta):
-    """Reference: an inline copy of summarise_value_difference as it is on main."""
-    value_differences = convert_to_dataframe(get_column_value_differences(meta))
-    variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
-    final_df = (
-        value_differences.group_by([variable_alias])
-        .agg(pl.sum("has_diff"))
-        .sort(variable_alias, descending=False)
-        .rename({variable_alias: "Value Differences", "has_diff": "Count"})
-    )
-    total_value_comparisons = value_differences.select(
-        pl.lit("Total Value Comparisons").alias("Value Differences"),
-        pl.len().alias("Count"),
-        pl.lit(100.0).alias("Percentage"),
-    )
-    value_comparisons = (
-        total_value_comparisons.filter(pl.col("Value Differences") == "Total Value Comparisons")
-        .select("Count")
-        .item()
-    )
-    total_differences = final_df.select(
-        pl.lit("Total Value Differences").alias("Value Differences"),
-        pl.sum("Count").alias("Count"),
-        (pl.sum("Count") / pl.lit(0.01 * value_comparisons)).alias("Percentage"),
-    )
-    columns_compared = final_df.select(pl.len().alias("Count")).item()
-    value_comparisons_per_column = value_comparisons / columns_compared
-    final_df_with_percentages = final_df.with_columns(
-        (pl.col("Count") / pl.lit(0.01 * value_comparisons_per_column)).alias("Percentage")
-    )
-    final_df2 = pl.concat([total_differences, final_df_with_percentages])
-    if meta.hide_empty_stats:
-        final_df2 = final_df2.filter(pl.col("Count") > 0)
-    return final_df2
+def load_main_compare():
+    """Load main's actual pl_compare/compare.py from git into its own module."""
+    source = subprocess.run(
+        ["git", "show", "main:pl_compare/compare.py"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    module = types.ModuleType("pl_compare_main")
+    exec(compile(source, "pl_compare/compare.py@main", "exec"), module.__dict__)
+    return module
+
+
+# Reference: main's real product code, so the benchmark never drifts from a copy.
+summarise_value_difference_main = load_main_compare().summarise_value_difference
 
 
 def timeit(fn, meta, reps: int) -> float:
