@@ -6,11 +6,6 @@ jobs:
       fail-fast: false
       matrix:
         configs:
-          - { polars-version: "1.37",  python-version: "3.10" }
-          - { polars-version: "1.37",  python-version: "3.11" }
-          - { polars-version: "1.37",  python-version: "3.12" }
-          - { polars-version: "1.37",  python-version: "3.13" }
-          - { polars-version: "1.39",  python-version: "3.13" }
           - { polars-version: "2.0",  python-version: "3.12" }
           - { polars-version: "2.0",  python-version: "3.13" }
 
