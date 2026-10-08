@@ -581,14 +581,15 @@ shape: (3, 6)
 """ in str(comp.report())
 
 
-def test_comparing_list_raises_exception():
-    """Polars has a bug/regression where an unpivot will not work if on columns of multiple types are used.
+def test_comparing_list_columns():
+    """List-typed columns must not crash the comparison.
 
-    It has been raised here: https://github.com/pola-rs/polars/issues/17501
+    Polars had a regression where an unpivot would fail when columns of multiple
+    types were used: https://github.com/pola-rs/polars/issues/17501. The repo
+    previously pinned an older polars to avoid it; the bug is fixed as of polars
+    2.0, and this test guards that combination against regressing again.
 
-    We will stick with an older version of polars until this bug is fixed.
-
-    The error:
+    The old error was:
     E       polars.exceptions.InvalidOperationError: 'unpivot' not supported for dtype: struct[3]
 
     """
@@ -847,3 +848,32 @@ def test_apply_column_renames_type_error():
     # Test list result
     with pytest.raises(TypeError, match="Expected result to be a polars DataFrame or LazyFrame"):
         mock_function_returns_list(mock_meta)
+
+
+def test_row_differences_ordering_is_deterministic():
+    """rows_sample() must return rows in a fixed, interleaved (base, compare) order.
+
+    Polars >= 2.0 no longer guarantees a stable sort, so sorting on the duplicated
+    per-side row index (both sides renumbered from zero) produces a non-deterministic
+    order. A fresh compare is built per iteration so every collect can expose it.
+    """
+    base_df = pl.DataFrame({"ID": ["shared1", "shared2", "b0", "b1", "b2"]})
+    compare_df = pl.DataFrame({"ID": ["shared1", "shared2", "c0", "c1", "c2"]})
+
+    expected = pl.DataFrame(
+        {
+            "join_columns.ID": ["b0", "c0", "b1", "c1", "b2", "c2"],
+            "variable": ["status"] * 6,
+            "value": [
+                "in base only",
+                "in compare only",
+                "in base only",
+                "in compare only",
+                "in base only",
+                "in compare only",
+            ],
+        }
+    )
+    for _ in range(10):
+        compare_result = compare(["ID"], base_df, compare_df)
+        assert_frame_equal(compare_result.rows_sample(), expected)
