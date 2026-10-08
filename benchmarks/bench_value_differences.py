@@ -98,8 +98,9 @@ def check_equal(cur, eager) -> None:
 
 def main() -> None:
     # CI runs land on tiny runners with tight job timeouts, so keep the data
-    # proportionate: 25k/50k rows is plenty to measure the current-vs-eager ratio.
-    cases = [(25_000, 3), (50_000, 5)]
+    # proportionate: 50k/100k rows is large enough to see the timing ratio
+    # clearly but still well within the runner's job timeout.
+    cases = [(50_000, 3), (100_000, 5)]
     reps = 2
     print(f"polars {pl.__version__}, {reps} reps")
     header = f"{'rows':>8} {'cols':>4} {'current (ms)':>12} {'eager (ms)':>12} {'ratio':>7}"
