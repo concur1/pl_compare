@@ -651,7 +651,8 @@ class compare:
         join_columns = [join_column_renames[col] for col in join_columns]
 
         all_user_columns = list(
-            set(base_lazy_df.collect().columns) | set(compare_lazy_df.collect().columns)
+            set(base_lazy_df.collect_schema().names())
+            | set(compare_lazy_df.collect_schema().names())
         )
 
         column_mapping = _generate_column_mapping(
