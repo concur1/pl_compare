@@ -43,12 +43,24 @@ def make_data(rows: int, cols: int, mutate_frac: float, seed: int = 42):
 
 def load_main_compare():
     """Load main's actual pl_compare/compare.py from git into its own module."""
-    source = subprocess.run(
-        ["git", "show", "main:pl_compare/compare.py"],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
+    # Accept a couple of ref spellings: local checkouts use "main", CI clones
+    # (which only fetch the pushed branch) expose it as "origin/main".
+    source = None
+    for ref in ("main", "origin/main"):
+        result = subprocess.run(
+            ["git", "show", f"{ref}:pl_compare/compare.py"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            source = result.stdout
+            break
+    if source is None:
+        raise RuntimeError(
+            "Could not resolve main:pl_compare/compare.py from git. Make sure the "
+            "'main' branch is available locally (the bench target fetches it) so "
+            "the benchmark can compare against main's real product code."
+        )
     module = types.ModuleType("pl_compare_main")
     exec(compile(source, "pl_compare/compare.py@main", "exec"), module.__dict__)
     return module
@@ -58,12 +70,23 @@ def load_main_compare():
 summarise_value_difference_main = load_main_compare().summarise_value_difference
 
 
-def timeit(fn, meta, reps: int) -> float:
-    fn(meta)  # warmup
-    t0 = time.perf_counter()
-    for _ in range(reps):
-        fn(meta)
-    return (time.perf_counter() - t0) / reps
+def timeit_pair(fn_a, fn_b, meta, reps: int):
+    """Time two impls in interleaved, order-alternating runs.
+
+    Measuring one impl for all reps then the other lets thermal/frequency drift
+    bias whichever ran second, so pairs alternate which one goes first each rep.
+    """
+    fn_a(meta)  # warmup both
+    fn_b(meta)
+    total_a = total_b = 0.0
+    for i in range(reps):
+        if i % 2 == 0:  # alternate which impl runs first
+            t0 = time.perf_counter(); fn_a(meta); total_a += time.perf_counter() - t0
+            t0 = time.perf_counter(); fn_b(meta); total_b += time.perf_counter() - t0
+        else:
+            t0 = time.perf_counter(); fn_b(meta); total_b += time.perf_counter() - t0
+            t0 = time.perf_counter(); fn_a(meta); total_a += time.perf_counter() - t0
+    return total_a / reps, total_b / reps
 
 
 def check_equal(cur, main) -> None:
@@ -90,8 +113,10 @@ def main() -> None:
         base_df, compare_df = make_data(rows, cols, mutate_frac=0.2)
         meta = compare(["id"], base_df, compare_df)._comparison_metadata
         check_equal(summarise_value_difference(meta), summarise_value_difference_main(meta))
-        cur_ms = timeit(summarise_value_difference, meta, reps) * 1000
-        main_ms = timeit(summarise_value_difference_main, meta, reps) * 1000
+        cur_s, main_s = timeit_pair(
+            summarise_value_difference, summarise_value_difference_main, meta, reps
+        )
+        cur_ms, main_ms = cur_s * 1000, main_s * 1000
         ratio = cur_ms / main_ms
         print(f"{rows:>8} {cols:>4} {cur_ms:>12.1f} {main_ms:>12.1f} {ratio:>6.2f}x")
         assert cur_ms < 3 * main_ms, (
