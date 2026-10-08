@@ -396,7 +396,7 @@ def get_columns_to_compare(
 
     return {
         col: format
-        for col, format in meta.base_df.collect().schema.items()
+        for col, format in meta.base_df.collect_schema().items()
         if col not in meta.join_columns
         and col not in columns_to_exclude
         and col in meta.compare_df.collect_schema().names()
@@ -486,14 +486,14 @@ def get_column_value_differences_filtered(meta: ComparisonMetadata) -> pl.DataFr
 def get_schema_comparison(meta: ComparisonMetadata) -> pl.DataFrame:
     base_df_schema = pl.LazyFrame(
         {
-            "column": meta.base_df.collect().schema.keys(),
-            "format": [str(val) for val in meta.base_df.collect().schema.values()],
+            "column": meta.base_df.collect_schema().keys(),
+            "format": [str(val) for val in meta.base_df.collect_schema().values()],
         }
     )
     compare_df_schema = pl.LazyFrame(
         {
-            "column": meta.compare_df.collect().schema.keys(),
-            "format": [str(val) for val in meta.compare_df.collect().schema.values()],
+            "column": meta.compare_df.collect_schema().keys(),
+            "format": [str(val) for val in meta.compare_df.collect_schema().values()],
         }
     )
     # For schema comparison, we need to create a new column mapping with format-specific aliases
