@@ -16,6 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python pin '${{ matrix.configs.python-version }}'
 
@@ -28,3 +30,7 @@ jobs:
       - name: Run checks
         run: |
           uv run make check
+
+      - name: Run benchmarks
+        run: |
+          uv run make bench
