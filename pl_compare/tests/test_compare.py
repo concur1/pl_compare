@@ -581,14 +581,15 @@ shape: (3, 6)
 """ in str(comp.report())
 
 
-def test_comparing_list_raises_exception():
-    """Polars has a bug/regression where an unpivot will not work if on columns of multiple types are used.
+def test_comparing_list_columns():
+    """List-typed columns must not crash the comparison.
 
-    It has been raised here: https://github.com/pola-rs/polars/issues/17501
+    Polars had a regression where an unpivot would fail when columns of multiple
+    types were used: https://github.com/pola-rs/polars/issues/17501. The repo
+    previously pinned an older polars to avoid it; the bug is fixed as of polars
+    2.0, and this test guards that combination against regressing again.
 
-    We will stick with an older version of polars until this bug is fixed.
-
-    The error:
+    The old error was:
     E       polars.exceptions.InvalidOperationError: 'unpivot' not supported for dtype: struct[3]
 
     """
