@@ -327,8 +327,8 @@ def get_combined_tables(
 
 
 def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
-    # The value-differences input may be lazy; collect it here because this
-    # summary is a handful of scalar stats, so laziness buys nothing.
+    # We materialise once on purpose. Lazy here would re-run the join and
+    # melt for every .item() below, and the result is a tiny table anyway.
     value_differences = convert_to_dataframe(get_column_value_differences(meta))
     variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
     final_df = (
