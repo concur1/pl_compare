@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal, Callable, List, Union, Dict, Optional
 from functools import wraps
+import types
 
 import polars as pl
 from polars.datatypes.classes import DataTypeClass
@@ -698,7 +699,7 @@ class compare:
 
     def _get_or_create(
         self,
-        func: Callable[[ComparisonMetadata], Union[pl.LazyFrame, pl.DataFrame]],
+        func: types.FunctionType,
         *args: ComparisonMetadata,
     ) -> Union[pl.LazyFrame, pl.DataFrame]:
         """
@@ -822,8 +823,8 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of all differences.
         """
-        return pl.concat(  # type: ignore
-            [
+        return pl.concat(
+            [  # ty: ignore[invalid-argument-type]
                 self.schemas_summary(),
                 self.rows_summary(),
                 self.values_summary()
@@ -850,8 +851,8 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of all differences.
         """
-        return pl.concat(  # type: ignore
-            [
+        return pl.concat(
+            [  # ty: ignore[invalid-argument-type]
                 self.schemas_summary().filter(
                     (pl.col("Statistic") == "Columns in base")
                     | (pl.col("Statistic") == "Columns in compare")

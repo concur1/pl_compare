@@ -12,9 +12,9 @@ format: ## Formats and checks the files with ruff
 	ruff check $(SRCPATH)
 
 .PHONY: check
-check: ## Runs checks using ruff, black, mypy and pytest
+check: ## Runs checks using ruff, ty and pytest
 	ruff check $(SRCPATH)
-	mypy --strict pl_compare/compare.py
+	ty check --python .venv pl_compare/compare.py
 	pytest --doctest-glob="README.md" -v
 
 .PHONY: test

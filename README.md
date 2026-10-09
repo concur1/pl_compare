@@ -632,7 +632,7 @@ End of Report
 - [x] Update report so that non differences are not displayed.
 - [x] Seperate out dev dependencies from library dependencies?
 - [x] Change 'threshold' to be equality resolution.
-- [x] strict MyPy type checking
+- [x] Type checking with ty
 - [x] Raise error and print examples if duplicates are present.
 - [x] Add total number of value differences to the value differences summary.
 - [x] Add percentage column so the value differences summary.
