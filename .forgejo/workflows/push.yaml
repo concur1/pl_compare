@@ -31,23 +31,3 @@ jobs:
         run: |
           uv run make check
 
-  # The benchmark compares every compare() method against main, so it must
-  # compare like-for-like. Running it inside the matrix would benchmark each
-  # polars/python combo against main and multiply noise and memory pressure on
-  # the shared tiny runner (past runs hit podman copy timeouts there), so it
-  # runs exactly once, after the tests pass.
-  bench:
-    runs-on: codeberg-tiny
-    needs: test
-    timeout-minutes: 30
-    steps:
-      - uses: https://code.forgejo.org/actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - run: uv python pin '3.13'
-      - run: uv sync
-
-      - name: Run benchmark
-        run: |
-          uv run make bench
