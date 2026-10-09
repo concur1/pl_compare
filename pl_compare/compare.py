@@ -444,10 +444,7 @@ def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame
         value_name=internal_value_col,
     )
 
-    # A count (not the full melt) decides the branch: the two branches produce
-    # different output schemas for the empty case, so this can't be fully lazy.
-    # ponytail: eager len() keeps a data-dependent schema branch; remove once the
-    # empty-differences output shape is made unconditional.
+    # A cheap count decides a data-dependent schema branch (empty vs non-empty diffs).
     if melted_df.select(pl.len()).collect().item() > 0 and len(compare_columns) > 0:
         # Use internal column names for processing
         melted_df = (
