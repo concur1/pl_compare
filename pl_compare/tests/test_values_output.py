@@ -7,7 +7,6 @@ path is compared row-by-row against `main` in the benchmark, so both the
 string values and their order are load-bearing.
 """
 
-import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 from pl_compare.compare import compare
