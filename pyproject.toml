@@ -21,7 +21,7 @@ Changelog = "https://github.com/concur1/pl_compare/releases"
 [dependency-groups]
 dev = [
     "ruff<1.0,>=0.3",
-    "mypy<2.0.0,>=1.9.0",
+    "ty>=0.0.78",
     "pytest<9.0.0,>=8.1.1",
     "pandas<3.0.0,>=2.0.3",
     "pdbpp>=0.10.3",
