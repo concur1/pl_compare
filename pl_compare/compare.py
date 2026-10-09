@@ -428,51 +428,110 @@ def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame
         how_join=how_join,
         coalesce=coalesce,
     )
-    temp = combined_tables.with_columns(
-        [
-            pl.struct(
-                base=f"{col}_base",
-                compare=f"{col}_compare",
-                has_diff=f"{col}_has_diff",
-            )
-            .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
-            .alias(f"__pl_compare_temp__{col}")
-            .struct.json_encode()
-            for col, format in compare_columns.items()
-        ]
-    ).rename({f"__pl_compare_temp__{col}": col for col in compare_columns})
 
     # Use internal column names from column mapping for unpivot to avoid conflicts
     internal_variable_col = meta.column_mapping.variable
     internal_value_col = meta.column_mapping.value
+    internal_base_col = meta.column_mapping.base
+    internal_compare_col = meta.column_mapping.compare
 
-    melted_df = temp.unpivot(
-        index=meta.join_columns,
-        on=[col for col, format in compare_columns.items()],
-        variable_name=internal_variable_col,
-        value_name=internal_value_col,
-    )
+    if not compare_columns:
+        melted_df = combined_tables.unpivot(
+            index=meta.join_columns,
+            on=[],
+            variable_name=internal_variable_col,
+            value_name=internal_value_col,
+        ).with_columns(pl.lit(False).alias("has_diff"))
+        return melted_df
 
-    # A cheap count decides a data-dependent schema branch (empty vs non-empty diffs).
-    if melted_df.select(pl.len()).collect().item() > 0 and len(compare_columns) > 0:
-        # Use internal column names for processing
-        melted_df = (
-            melted_df.with_columns(
-                pl.col(internal_value_col)
-                .str.json_path_match(f"$.{meta.base_alias}")
-                .alias(meta.column_mapping.base),
-                pl.col(internal_value_col)
-                .str.json_path_match(f"$.{meta.compare_alias}")
-                .alias(meta.column_mapping.compare),
-                pl.col(internal_value_col).str.json_path_match("$.has_diff").alias("has_diff"),
-            )
-            .drop([internal_value_col])
-            .with_columns(pl.col("has_diff").replace_strict({"false": False, "true": True}))
+    # Nested dtypes (List/Struct/Array/Object) can't be cast/unpivoted to one Utf8
+    # column, so they keep the historical json round-trip (identical output, and
+    # such columns are the rare, small case).
+    excluded = (pl.List, pl.Struct, pl.Array, pl.Object)
+    if any(isinstance(dtype, excluded) for dtype in compare_columns.values()):
+        temp = combined_tables.with_columns(
+            [
+                pl.struct(
+                    base=f"{col}_base",
+                    compare=f"{col}_compare",
+                    has_diff=f"{col}_has_diff",
+                )
+                .struct.rename_fields([meta.base_alias, meta.compare_alias, "has_diff"])
+                .alias(f"__pl_compare_temp__{col}")
+                .struct.json_encode()
+                for col, format in compare_columns.items()
+            ]
+        ).rename({f"__pl_compare_temp__{col}": col for col in compare_columns})
+
+        melted_df = temp.unpivot(
+            index=meta.join_columns,
+            on=[col for col, format in compare_columns.items()],
+            variable_name=internal_variable_col,
+            value_name=internal_value_col,
         )
-    else:
-        melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
 
-    return melted_df
+        # A cheap count decides a data-dependent schema branch (empty vs non-empty diffs).
+        if melted_df.select(pl.len()).collect().item() > 0 and len(compare_columns) > 0:
+            # Use internal column names for processing
+            melted_df = (
+                melted_df.with_columns(
+                    pl.col(internal_value_col)
+                    .str.json_path_match(f"$.{meta.base_alias}")
+                    .alias(internal_base_col),
+                    pl.col(internal_value_col)
+                    .str.json_path_match(f"$.{meta.compare_alias}")
+                    .alias(internal_compare_col),
+                    pl.col(internal_value_col).str.json_path_match("$.has_diff").alias("has_diff"),
+                )
+                .drop([internal_value_col])
+                .with_columns(pl.col("has_diff").replace_strict({"false": False, "true": True}))
+            )
+        else:
+            melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
+        return melted_df
+
+    # The common case: melt the already-computed *_base / *_compare / *_has_diff
+    # columns directly. Cast each to Utf8 first (cheap, per column) so the mix of
+    # dtypes in a table melts into a single String column whose stringification
+    # matches the json round-trip above -- but without serialising millions of
+    # rows to json (the historical 2x bottleneck). Three aligned melts (same
+    # per-column, row-major order) stay in the original row order, so samples and
+    # summaries come out identical.
+    stringified = combined_tables.select(
+        meta.join_columns
+        + [pl.col(f"{c}_base").cast(pl.Utf8) for c in compare_columns]
+        + [pl.col(f"{c}_compare").cast(pl.Utf8) for c in compare_columns]
+        + [pl.col(f"{c}_has_diff") for c in compare_columns]
+    )
+    base_melt = stringified.unpivot(
+        index=meta.join_columns,
+        on=[f"{c}_base" for c in compare_columns],
+        variable_name=internal_variable_col,
+        value_name=internal_base_col,
+    )
+    compare_melt = stringified.unpivot(
+        index=[],
+        on=[f"{c}_compare" for c in compare_columns],
+        variable_name="__pl_compare_unused",
+        value_name=internal_compare_col,
+    )
+    has_diff_melt = stringified.unpivot(
+        index=[],
+        on=[f"{c}_has_diff" for c in compare_columns],
+        variable_name="__pl_compare_unused_2",
+        value_name="has_diff",
+    )
+    return pl.concat(
+        [
+            base_melt,
+            compare_melt.select(pl.col(internal_compare_col)),
+            has_diff_melt.select(pl.col("has_diff")),
+        ],
+        how="horizontal",
+    ).with_columns(
+        # The melts paste the *_base suffix into the variable names; strip it.
+        pl.col(internal_variable_col).str.replace("_base$", "")
+    )
 
 
 def get_column_value_differences_filtered(
