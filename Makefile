@@ -22,6 +22,6 @@ test: ## Runs tests
 	pytest --doctest-glob="README.md" -v
 
 .PHONY: bench
-bench: ## Runs the value differences benchmark
+bench: ## Runs the compare() methods benchmark against main
 	git fetch origin main --depth=1 || true
 	python benchmarks/bench_value_differences.py

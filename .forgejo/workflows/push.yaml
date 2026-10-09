@@ -1,7 +1,12 @@
+# Codeberg's hosted runner `codeberg-tiny` is capped at 1 CPU / 2G / 2 min
+# (codeberg.org/actions/meta), which a cold `uv sync` + `make check` exceeds,
+# so the test job runs on `codeberg-small` (2 CPU / 4G / 5 min). The benchmark
+# is only run on GitHub Actions (uncapped runners); see .github/workflows/on_push.yaml.
 on: [push]
 jobs:
   test:
-    runs-on: codeberg-tiny
+    runs-on: codeberg-small
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +30,3 @@ jobs:
       - name: Run checks
         run: |
           uv run make check
-
-      - name: Run benchmarks
-        run: |
-          uv run make bench
