@@ -1,7 +1,14 @@
+# Codeberg's hosted runners enforce hard caps (see codeberg.org/actions/meta):
+#   codeberg-tiny  1 CPU / 2G / 2 min  <- uv+checks+bench all exceed this, jobs
+#                                          get killed -> podman copy timeouts
+#   codeberg-small 2 CPU / 4G / 5 min
+#   codeberg-medium 4 CPU / 8G / 10 min
+# Even a cold `uv sync` exceeds tiny's 2-minute window, so we run on small.
 on: [push]
 jobs:
   test:
-    runs-on: codeberg-tiny
+    runs-on: codeberg-small
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -29,20 +36,21 @@ jobs:
   # The benchmark compares every compare() method against main, so it must
   # compare like-for-like. Running it inside the matrix would benchmark each
   # polars/python combo against main and multiply noise and memory pressure on
-  # the shared tiny runner (past runs hit podman copy timeouts there), so it
-  # runs exactly once, after the tests pass.
+  # the shared runner (past runs hit podman copy timeouts there), so it runs
+  # exactly once, after the tests pass.
   bench:
-    runs-on: codeberg-tiny
-    needs: test
-    timeout-minutes: 30
+    runs-on: codeberg-small
+    timeout-minutes: 5
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v3
         with:
           fetch-depth: 0
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python pin '3.13'
-      - run: uv sync
+      # The bench only needs polars (+git); skip the dev toolchain (ruff, mypy,
+      # pytest, pandas) to keep the cold install inside the 5-minute window.
+      - run: uv sync --no-dev
 
       - name: Run benchmark
         run: |
-          uv run make bench
+          uv run --no-dev make bench
