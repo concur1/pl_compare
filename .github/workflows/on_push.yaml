@@ -9,7 +9,6 @@ jobs:
           - { polars-version: "2.0",  python-version: "3.12" }
           - { polars-version: "2.0",  python-version: "3.13" }
 
-
     steps:
       - uses: actions/checkout@v6
         with:
@@ -27,6 +26,21 @@ jobs:
         run: |
           uv run make check
 
-      - name: Run benchmarks
+  # The benchmark compares every compare() method against main, so it must run
+  # against a single well-defined environment rather than the test matrix. It
+  # runs exactly once, after the tests pass.
+  bench:
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - run: uv python pin '3.13'
+      - run: uv sync
+
+      - name: Run benchmark
         run: |
           uv run make bench

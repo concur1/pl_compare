@@ -1,12 +1,19 @@
-"""Benchmark for summarise_value_difference (a.k.a. values_summary).
+"""Benchmark for every data-producing method of the compare() class.
 
-Compares the implementation on the current branch against the actual product
-code on main: summarise_value_difference is whatever the branch being CI'd
-ships, and the reference is loaded from git (main:pl_compare/compare.py) so it
-can never drift from a hand-written copy. CI timing is noisy, so we report a
-ratio rather than absolute numbers.
+Times each method on the current branch against the same method from main's
+product code (loaded from git so it can never drift from a hand-written copy).
+CI timing is noisy, so we report a ratio to main rather than absolute numbers,
+and use data large enough that the measured work sits well above the runner's
+scheduling noise.
 
-Exits 0 unless the current branch is >= 1.5x slower than main.
+The composite methods (summary, equals_summary, is_*, report) only call the
+six methods below, so they are covered transitively.
+
+Regression gate: exits non-zero only if the current branch is slower than main
+by more than BOTH 50% (1.5x) AND an absolute floor. The most expensive methods
+are gated by the 1.5x ratio; the sub-30ms methods are dominated by scheduling
+noise (locally the paired cur/main difference wanders up to ~10ms), so the
+ratio is meaningless there and only the absolute floor applies.
 """
 
 import random
@@ -20,10 +27,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import polars as pl
 
-from pl_compare.compare import (
-    compare,
-    summarise_value_difference,
-)
+from pl_compare.compare import compare
+
+# Gate floor (ms): ignore regressions smaller than this even if they exceed
+# the 1.5x ratio. Chosen from the noise seen on a 500kx8 run: cheap methods'
+# cur/main paired difference wanders up to ~10ms locally, and a shared tiny CI
+# runner is a few times noisier still. 100ms sits well above that while staying
+# far below any real regression on the methods that do real work.
+NOISE_FLOOR_MS = 100.0
+
+METHODS = [
+    "schemas_summary",
+    "rows_summary",
+    "rows_sample",
+    "values_summary",
+    "schemas_sample",
+    "values_sample",
+]
 
 
 def make_data(rows: int, cols: int, mutate_frac: float, seed: int = 42):
@@ -67,62 +87,100 @@ def load_main_compare():
 
 
 # Reference: main's real product code, so the benchmark never drifts from a copy.
-summarise_value_difference_main = load_main_compare().summarise_value_difference
+main_compare_cls = load_main_compare().compare
 
 
-def timeit_pair(fn_a, fn_b, meta, reps: int):
-    """Time two impls in interleaved, order-alternating runs.
+def time_methods(method, cur_cls, main_cls, base_df, compare_df, reps):
+    """Time one method on fresh instances of both impls, interleaved.
 
-    Measuring one impl for all reps then the other lets thermal/frequency drift
-    bias whichever ran second, so pairs alternate which one goes first each rep.
+    A fresh compare() instance per rep keeps its ``_created_frames`` cache from
+    hiding the real computation, and the instance is built *before* the timer
+    starts so construction cost isn't measured. Current and main alternate
+    which one runs first each rep so drift can't bias one side.
     """
-    fn_a(meta)  # warmup both
-    fn_b(meta)
-    total_a = total_b = 0.0
+    warm = lambda cls: getattr(cls(["id"], base_df, compare_df), method)()
+    warm(cur_cls)
+    warm(main_cls)
+    totals = [0.0, 0.0]
     for i in range(reps):
-        if i % 2 == 0:  # alternate which impl runs first
-            t0 = time.perf_counter(); fn_a(meta); total_a += time.perf_counter() - t0
-            t0 = time.perf_counter(); fn_b(meta); total_b += time.perf_counter() - t0
-        else:
-            t0 = time.perf_counter(); fn_b(meta); total_b += time.perf_counter() - t0
-            t0 = time.perf_counter(); fn_a(meta); total_a += time.perf_counter() - t0
-    return total_a / reps, total_b / reps
+        for idx in ((0, 1) if i % 2 == 0 else (1, 0)):
+            cls = (cur_cls, main_cls)[idx]
+            inst = cls(["id"], base_df, compare_df)
+            t0 = time.perf_counter()
+            getattr(inst, method)()
+            totals[idx] += time.perf_counter() - t0
+    return totals[0] / reps, totals[1] / reps
+
+
+def gate(method, cur_ms, main_ms) -> None:
+    """Fail if current is slower than main by more than the allowed slack.
+
+    Tolerance is the LARGER of 50% of main's time and the absolute floor: for a
+    fast method the ratio is just noise, so it must also clear the floor before
+    it counts; for a slow method 50% is the meaningful bound.
+    """
+    slack_ms = max(0.5 * main_ms, NOISE_FLOOR_MS)
+    assert cur_ms - main_ms <= slack_ms, (
+        f"{method}: current {cur_ms:.0f}ms is more than "
+        f"max(50% of main, {NOISE_FLOOR_MS:.0f}ms) slower than main {main_ms:.0f}ms"
+    )
+
+
+def gate_selfcheck() -> None:
+    """Cheap smoke test of the gate (fast methods survive noise, slow ones don't)."""
+    gate("heavy", 2040, 2000)  # 2% noise on a 2s method: fine
+
+    def fails(method, cur_ms, main_ms):
+        try:
+            gate(method, cur_ms, main_ms)
+        except AssertionError:
+            return
+        raise AssertionError(f"{method} {cur_ms}ms vs {main_ms}ms should have failed")
+
+    fails("heavy", 3200, 2000)   # 1.6x on a 2s method: real regression
+    gate("fast", 3.3, 2.0)       # 1.65x on a 2ms method: just noise
+    fails("fast", 110, 2.0)      # pathological, clears the floor
 
 
 def check_equal(cur, main) -> None:
     assert cur.schema == main.schema
+    assert len(cur) == len(main)
     for ra, rb in zip(cur.to_dicts(), main.to_dicts()):
         for k in ra:
-            assert ra[k] == rb[k] or (isinstance(ra[k], float) and abs(ra[k] - rb[k]) < 1e-6), (
-                ra[k],
-                rb[k],
-            )
+            assert ra[k] == rb[k] or (
+                isinstance(ra[k], float) and abs(ra[k] - rb[k]) < 1e-6
+            ), (ra[k], rb[k])
 
 
 def main() -> None:
-    # CI runs land on tiny runners with tight job timeouts, so keep the data
-    # proportionate: 50k/100k rows is large enough to see the timing ratio
-    # clearly but still well within the runner's job timeout.
-    cases = [(50_000, 3), (100_000, 5)]
-    reps = 2
+    gate_selfcheck()
+    # 500k rows put each values_* call at roughly 2s (locally), well above the
+    # shared tiny runner's scheduling noise, while the rest of the methods stay
+    # cheap. This runs once in a dedicated CI job (not the test matrix), so the
+    # single larger run costs less than four matrix copies of the old bench.
+    cases = [(200_000, 6), (500_000, 8)]
+    reps = 3
     print(f"polars {pl.__version__}, {reps} reps")
-    header = f"{'rows':>8} {'cols':>4} {'current (ms)':>12} {'main (ms)':>12} {'ratio':>7}"
+    header = f"{'rows':>8} {'cols':>4} {'method':<20} {'current (ms)':>12} {'main (ms)':>12} {'ratio':>7}"
     print(header)
     print("-" * len(header))
     for rows, cols in cases:
         base_df, compare_df = make_data(rows, cols, mutate_frac=0.2)
-        meta = compare(["id"], base_df, compare_df)._comparison_metadata
-        check_equal(summarise_value_difference(meta), summarise_value_difference_main(meta))
-        cur_s, main_s = timeit_pair(
-            summarise_value_difference, summarise_value_difference_main, meta, reps
-        )
-        cur_ms, main_ms = cur_s * 1000, main_s * 1000
-        ratio = cur_ms / main_ms
-        print(f"{rows:>8} {cols:>4} {cur_ms:>12.1f} {main_ms:>12.1f} {ratio:>6.2f}x")
-        assert cur_ms < 1.5 * main_ms, (
-            f"current {cur_ms:.0f}ms is >= 1.5x the main impl {main_ms:.0f}ms"
-        )
-    print("OK: current branch is within 1.5x of main")
+        for method in METHODS:
+            check_equal(
+                getattr(compare(["id"], base_df, compare_df), method)(),
+                getattr(main_compare_cls(["id"], base_df, compare_df), method)(),
+            )
+            cur_s, main_s = time_methods(
+                method, compare, main_compare_cls, base_df, compare_df, reps
+            )
+            cur_ms, main_ms = cur_s * 1000, main_s * 1000
+            ratio = cur_ms / main_ms
+            print(
+                f"{rows:>8} {cols:>4} {method:<20} {cur_ms:>12.1f} {main_ms:>12.1f} {ratio:>6.2f}x"
+            )
+            gate(method, cur_ms, main_ms)
+    print(f"OK: within max(50%, {NOISE_FLOOR_MS:.0f}ms) of main on all methods")
 
 
 if __name__ == "__main__":
