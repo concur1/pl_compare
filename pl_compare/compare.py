@@ -139,7 +139,7 @@ def set_df_type(
         return convert_to_dataframe(df)
 
 
-def get_uncertain_row_count(df: pl.LazyFrame) -> int:
+def get_uncertain_row_count(df: Union[pl.LazyFrame, pl.DataFrame]) -> int:
     df_solid = convert_to_dataframe(df).select(pl.col("Count"))
     if df_solid.height > 0:
         row_count: int = df_solid.item()
@@ -161,7 +161,9 @@ def get_row_comparison_summary(meta: ComparisonMetadata) -> pl.DataFrame:
         coalesce=True,
         validate=meta.validate,
     )
-    grouped_rows = (
+    # Materialise the small grouped table once: the three filters below would
+    # otherwise each re-run the full join/group_by against the lazy source.
+    grouped_rows = convert_to_dataframe(
         combined_table.select(meta.join_columns + [in_base_col, in_compare_col])
         .group_by([in_base_col, in_compare_col])
         .agg(pl.len().alias("Count"))
@@ -327,10 +329,16 @@ def get_combined_tables(
     )
 
 
-def summarise_value_difference(meta: ComparisonMetadata) -> pl.DataFrame:
-    # We materialise once on purpose. Lazy here would re-run the join and
+def summarise_value_difference(
+    meta: ComparisonMetadata,
+    value_differences: Union[pl.LazyFrame, pl.DataFrame, None] = None,
+) -> pl.DataFrame:
+    # We materialise once on purpose (the caller may pass in the already-built
+    # frame shared with values_sample). Lazy here would re-run the join and
     # melt for every .item() below, and the result is a tiny table anyway.
-    value_differences = convert_to_dataframe(get_column_value_differences(meta))
+    if value_differences is None:
+        value_differences = get_column_value_differences(meta)
+    value_differences = convert_to_dataframe(value_differences)
     variable_alias = meta.column_mapping.mapping[meta.column_mapping.variable]
     final_df = (
         value_differences.group_by([variable_alias])
@@ -469,8 +477,9 @@ def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame
 
 def get_column_value_differences_filtered(
     meta: ComparisonMetadata,
+    df: Union[pl.LazyFrame, pl.DataFrame, None] = None,
 ) -> Union[pl.LazyFrame, pl.DataFrame]:
-    df = get_column_value_differences(meta)
+    df = df if df is not None else get_column_value_differences(meta)
     filtered_df = df.filter(pl.col("has_diff")).drop("has_diff")
     if meta.sample_limit is not None:
         # Use the final variable alias for grouping
@@ -752,7 +761,13 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The summary of value differences.
         """
-        return self._get_or_create(summarise_value_difference, self._comparison_metadata).select(
+        def _summarise(meta):
+            # Share the underlying value-differences frame with values_sample
+            # so report()/summary() don't re-run the whole pipeline per method.
+            base = self._get_or_create(get_column_value_differences, meta)
+            return summarise_value_difference(meta, base)
+
+        return self._get_or_create(_summarise, self._comparison_metadata).select(
             "Value Differences", pl.col("Count").cast(pl.Int64).alias("Count"), "Percentage"
         )
 
@@ -772,7 +787,11 @@ class compare:
         Returns:
             Union[pl.LazyFrame, pl.DataFrame]: The sample of the value differences.
         """
-        return self._get_or_create(get_column_value_differences_filtered, self._comparison_metadata)
+        def _sample(meta):
+            base = self._get_or_create(get_column_value_differences, meta)
+            return get_column_value_differences_filtered(meta, base)
+
+        return self._get_or_create(_sample, self._comparison_metadata)
 
     def is_equal(self) -> bool:
         """
