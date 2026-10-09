@@ -411,6 +411,49 @@ def get_columns_to_compare(
     }
 
 
+# Scalars whose cast(Utf8) output is byte-identical to what the historical
+# json round-trip returned for that value.
+_CAST_TO_UTF8 = (
+    pl.Utf8,
+    pl.Boolean,
+    pl.Int8,
+    pl.Int16,
+    pl.Int32,
+    pl.Int64,
+    pl.UInt8,
+    pl.UInt16,
+    pl.UInt32,
+    pl.UInt64,
+    pl.Float32,
+    pl.Float64,
+    pl.Date,
+    pl.Decimal,
+    pl.Categorical,
+    pl.Null,
+    pl.Binary,  # json writer panics on Binary; returning decoded text beats crashing
+)
+# Temporal dtypes json-encode as "<display>" (with polars' fractional trimming), while
+# the json_path_match return value is that display without quotes.
+_JSON_QUOTED = (pl.Datetime, pl.Time, pl.Duration)
+# Nested dtypes can't cast to Utf8; json-encode (polars' own writer == the json
+# round-trip's value text) and strip the 1-field struct wrapper.
+_JSON_NESTED = (pl.List, pl.Struct, pl.Array)
+
+
+def _stringify_value(column: str, dtype) -> pl.Expr:
+    """Schema-driven stringification of one value column, byte-identical to the
+    json round-trip's extracted base/compare string, but computed per column in
+    one pass instead of a json parse of every melted row."""
+    if isinstance(dtype, _CAST_TO_UTF8):
+        return pl.col(column).cast(pl.Utf8)
+    expr = pl.col(column)
+    json_text = pl.struct(v=expr).struct.json_encode()
+    unquoted = json_text.str.strip_prefix('{"v":').str.strip_suffix("}")
+    if isinstance(dtype, _JSON_QUOTED):
+        unquoted = unquoted.str.strip_prefix('"').str.strip_suffix('"')
+    return pl.when(expr.is_null()).then(pl.lit(None, dtype=pl.Utf8)).otherwise(unquoted)
+
+
 @apply_column_renames
 def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame, pl.DataFrame]:
     how_join: Literal["inner", "full"] = "inner"
@@ -444,11 +487,12 @@ def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame
         ).with_columns(pl.lit(False).alias("has_diff"))
         return melted_df
 
-    # Nested dtypes (List/Struct/Array/Object) can't be cast/unpivoted to one Utf8
-    # column, so they keep the historical json round-trip (identical output, and
-    # such columns are the rare, small case).
-    excluded = (pl.List, pl.Struct, pl.Array, pl.Object)
-    if any(isinstance(dtype, excluded) for dtype in compare_columns.values()):
+    # Anything we don't have a per-dtype stringifier for (Object, Enum, ...) keeps
+    # the historical whole-call json round-trip. Such columns are vanishingly rare.
+    if any(
+        not isinstance(dtype, (_CAST_TO_UTF8, _JSON_QUOTED, _JSON_NESTED))
+        for dtype in compare_columns.values()
+    ):
         temp = combined_tables.with_columns(
             [
                 pl.struct(
@@ -490,17 +534,16 @@ def get_column_value_differences(meta: ComparisonMetadata) -> Union[pl.LazyFrame
             melted_df = melted_df.with_columns(pl.lit(False).alias("has_diff"))
         return melted_df
 
-    # The common case: melt the already-computed *_base / *_compare / *_has_diff
-    # columns directly. Cast each to Utf8 first (cheap, per column) so the mix of
-    # dtypes in a table melts into a single String column whose stringification
-    # matches the json round-trip above -- but without serialising millions of
-    # rows to json (the historical 2x bottleneck). Three aligned melts (same
-    # per-column, row-major order) stay in the original row order, so samples and
-    # summaries come out identical.
+    # Per-dtype stringification of each value column, then three aligned melts.
+    # The *_has_diff columns are computed natively by get_combined_tables, so the
+    # melt only needs to carry strings (which is what the historical json
+    # round-trip existed to produce). Stringifying per column first keeps the
+    # melt a homogeneous Utf8 unpivot even across mixed dtypes -- no json parse
+    # of every melted row (the historical bottleneck).
     stringified = combined_tables.select(
         meta.join_columns
-        + [pl.col(f"{c}_base").cast(pl.Utf8) for c in compare_columns]
-        + [pl.col(f"{c}_compare").cast(pl.Utf8) for c in compare_columns]
+        + [_stringify_value(f"{c}_base", d).alias(f"{c}_base") for c, d in compare_columns.items()]
+        + [_stringify_value(f"{c}_compare", d).alias(f"{c}_compare") for c, d in compare_columns.items()]
         + [pl.col(f"{c}_has_diff") for c in compare_columns]
     )
     base_melt = stringified.unpivot(
